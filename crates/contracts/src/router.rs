@@ -2,9 +2,10 @@ use crate::errors::ContractError;
 use crate::events;
 use crate::storage::{
     self, extend_instance_ttl, get_fee_rate, get_fee_to, increment_nonce, is_supported_pool,
-    transfer_asset, StorageKey,
+    transfer_asset, StorageKey, INSTANCE_TTL_EXTEND_TO, INSTANCE_TTL_THRESHOLD, POOL_TTL_EXTEND_TO,
+    POOL_TTL_THRESHOLD,
 };
-use crate::types::{QuoteResult, Route, SwapParams, SwapResult};
+use crate::types::{QuoteResult, Route, SwapParams, SwapResult, TTLStatus};
 use soroban_sdk::{contract, contractimpl, symbol_short, vec, Address, Env, IntoVal, Symbol};
 
 const CONTRACT_VERSION: u32 = 1;
@@ -32,6 +33,8 @@ impl StellarRoute {
         e.storage().instance().set(&StorageKey::FeeTo, &fee_to);
         e.storage().instance().set(&StorageKey::Paused, &false);
 
+        storage::set_last_ttl_extension(&e, e.ledger().sequence());
+
         events::initialized(&e, admin, fee_rate);
         extend_instance_ttl(&e);
         Ok(())
@@ -56,10 +59,11 @@ impl StellarRoute {
         }
 
         e.storage().persistent().set(&key, &true);
-        e.storage().persistent().extend_ttl(&key, 17280, 17280 * 30);
+        storage::extend_pool_ttl(&e, &pool);
 
         let new_count = storage::get_pool_count(&e) + 1;
         storage::set_pool_count(&e, new_count);
+        storage::add_to_pool_list(&e, &pool);
 
         events::pool_registered(&e, pool);
         extend_instance_ttl(&e);
@@ -70,6 +74,7 @@ impl StellarRoute {
         storage::get_admin(&e).require_auth();
         e.storage().instance().set(&StorageKey::Paused, &true);
         events::paused(&e);
+        extend_instance_ttl(&e);
         Ok(())
     }
 
@@ -77,6 +82,7 @@ impl StellarRoute {
         storage::get_admin(&e).require_auth();
         e.storage().instance().set(&StorageKey::Paused, &false);
         events::unpaused(&e);
+        extend_instance_ttl(&e);
         Ok(())
     }
 
@@ -252,6 +258,17 @@ impl StellarRoute {
         );
 
         increment_nonce(&e, sender.clone());
+        storage::add_swap_volume(&e, params.amount_in);
+
+        // Extend TTLs for pools used in this route
+        for i in 0..params.route.hops.len() {
+            let hop = params.route.hops.get(i).unwrap();
+            storage::extend_pool_ttl(&e, &hop.pool);
+        }
+        extend_instance_ttl(&e);
+
+        // Check TTL health and emit warning if needed
+        Self::check_ttl_health(&e);
 
         events::swap_executed(
             &e,
@@ -268,5 +285,72 @@ impl StellarRoute {
             route: params.route,
             executed_at: e.ledger().sequence() as u64,
         })
+    }
+
+    // --- TTL Management ---
+
+    /// Public function anyone can call to extend all storage TTLs.
+    /// No authorization required — keeping the contract alive is a public good.
+    pub fn extend_storage_ttl(e: Env) {
+        // Extend instance TTL (Admin, FeeRate, FeeTo, Paused, PoolCount, PoolList)
+        extend_instance_ttl(&e);
+
+        // Extend all registered pool TTLs
+        let pool_list = storage::get_pool_list(&e);
+        let pools_extended = pool_list.len();
+        for i in 0..pool_list.len() {
+            let pool = pool_list.get(i).unwrap();
+            storage::extend_pool_ttl(&e, &pool);
+        }
+
+        // Extend TotalSwapVolume TTL
+        storage::extend_volume_ttl(&e);
+
+        // Record when this extension was performed
+        storage::set_last_ttl_extension(&e, e.ledger().sequence());
+
+        events::ttl_extended(&e, pools_extended, e.ledger().sequence());
+    }
+
+    /// Returns estimated TTL status for monitoring. Values are estimates
+    /// based on when extend_storage_ttl was last called.
+    pub fn get_ttl_status(e: Env) -> TTLStatus {
+        let current_ledger = e.ledger().sequence();
+        let last_extended = storage::get_last_ttl_extension(&e);
+
+        let elapsed = current_ledger.saturating_sub(last_extended);
+
+        let instance_remaining = INSTANCE_TTL_EXTEND_TO.saturating_sub(elapsed) as u64;
+        let pools_remaining = POOL_TTL_EXTEND_TO.saturating_sub(elapsed) as u64;
+
+        let needs_extension = instance_remaining < INSTANCE_TTL_THRESHOLD as u64
+            || pools_remaining < POOL_TTL_THRESHOLD as u64;
+
+        TTLStatus {
+            instance_ttl_remaining: instance_remaining,
+            pools_min_ttl: pools_remaining,
+            needs_extension,
+            last_extended_ledger: last_extended,
+        }
+    }
+
+    /// Returns the total swap volume tracked by the contract.
+    pub fn get_total_swap_volume(e: Env) -> i128 {
+        storage::get_total_swap_volume(&e)
+    }
+
+    /// Internal: check TTL health and emit warning if below threshold.
+    fn check_ttl_health(e: &Env) {
+        let last_extended = storage::get_last_ttl_extension(e);
+        if last_extended == 0 {
+            return;
+        }
+
+        let elapsed = e.ledger().sequence().saturating_sub(last_extended);
+        let pools_remaining = POOL_TTL_EXTEND_TO.saturating_sub(elapsed);
+
+        if pools_remaining < POOL_TTL_THRESHOLD {
+            events::ttl_warning(e, pools_remaining as u64, POOL_TTL_THRESHOLD);
+        }
     }
 }

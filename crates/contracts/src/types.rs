@@ -62,6 +62,15 @@ pub struct SwapResult {
     pub executed_at: u64,
 }
 
+#[contracttype]
+#[derive(Clone, Debug, PartialEq)]
+pub struct TTLStatus {
+    pub instance_ttl_remaining: u64,
+    pub pools_min_ttl: u64,
+    pub needs_extension: bool,
+    pub last_extended_ledger: u32,
+}
+
 // Interface for AMM pools (SEP-like standard)
 pub trait LiquidityPoolInterface {
     fn get_rsrvs(e: Env) -> (i128, i128);

@@ -17,6 +17,9 @@ use soroban_sdk::{
 use super::{
     errors::ContractError,
     router::{StellarRoute, StellarRouteClient},
+    storage::{
+        INSTANCE_TTL_EXTEND_TO, INSTANCE_TTL_THRESHOLD, POOL_TTL_EXTEND_TO, POOL_TTL_THRESHOLD,
+    },
     types::{Asset, PoolType, Route, RouteHop, SwapParams},
 };
 
@@ -1232,4 +1235,233 @@ fn test_is_pool_registered_different_pool() {
     client.register_pool(&pool1);
     assert!(client.is_pool_registered(&pool1));
     assert!(!client.is_pool_registered(&pool2));
+}
+
+// ── TTL Management Tests ─────────────────────────────────────────────────
+
+#[test]
+fn test_extend_storage_ttl_no_pools() {
+    let env = setup_env();
+    let (_, _, client) = deploy_router(&env);
+    // Should succeed even with zero registered pools
+    client.extend_storage_ttl();
+}
+
+#[test]
+fn test_extend_storage_ttl_with_pools() {
+    let env = setup_env();
+    let (_, _, client) = deploy_router(&env);
+    client.register_pool(&deploy_mock_pool(&env));
+    client.register_pool(&deploy_mock_pool(&env));
+    client.register_pool(&deploy_mock_pool(&env));
+    // Should extend TTL for all three pools
+    client.extend_storage_ttl();
+}
+
+#[test]
+fn test_extend_storage_ttl_emits_event() {
+    let env = setup_env();
+    let (_, _, client) = deploy_router(&env);
+    let pool = deploy_mock_pool(&env);
+    client.register_pool(&pool);
+    let events_before = env.events().all().len();
+    client.extend_storage_ttl();
+    assert!(env.events().all().len() > events_before);
+}
+
+#[test]
+fn test_get_ttl_status_after_init() {
+    let env = setup_env();
+    let (_, _, client) = deploy_router(&env);
+    let status = client.get_ttl_status();
+    // After initialize, last_extended_ledger is set to current sequence
+    assert!(!status.needs_extension);
+    assert!(status.instance_ttl_remaining > 0);
+    assert!(status.pools_min_ttl > 0);
+}
+
+#[test]
+fn test_get_ttl_status_after_extension() {
+    let env = setup_env();
+    let (_, _, client) = deploy_router(&env);
+    env.ledger().with_mut(|li| li.sequence_number = 1000);
+    client.extend_storage_ttl();
+    let status = client.get_ttl_status();
+    assert_eq!(status.last_extended_ledger, 1000);
+    assert_eq!(status.instance_ttl_remaining, INSTANCE_TTL_EXTEND_TO as u64);
+    assert_eq!(status.pools_min_ttl, POOL_TTL_EXTEND_TO as u64);
+    assert!(!status.needs_extension);
+}
+
+#[test]
+fn test_get_ttl_status_needs_extension_when_stale() {
+    let env = setup_env();
+    let (_, _, client) = deploy_router(&env);
+    env.ledger().with_mut(|li| li.sequence_number = 1000);
+    client.extend_storage_ttl();
+
+    // Advance past the instance TTL threshold (30d - 7d = 23d elapsed)
+    let past_threshold = 1000 + INSTANCE_TTL_EXTEND_TO - INSTANCE_TTL_THRESHOLD + 1;
+    env.ledger()
+        .with_mut(|li| li.sequence_number = past_threshold);
+
+    let status = client.get_ttl_status();
+    assert!(status.needs_extension);
+    assert!(status.instance_ttl_remaining < INSTANCE_TTL_THRESHOLD as u64);
+}
+
+#[test]
+fn test_ttl_extension_during_swap() {
+    let env = setup_env();
+    let (_, _, client) = deploy_router(&env);
+    let pool = deploy_mock_pool(&env);
+    client.register_pool(&pool);
+    // Swap should extend instance + pool TTLs without panicking
+    simple_swap(&env, &client, &pool);
+}
+
+#[test]
+fn test_pool_list_tracks_registrations() {
+    let env = setup_env();
+    let (_, _, client) = deploy_router(&env);
+    assert_eq!(client.get_pool_count(), 0);
+
+    let pool1 = deploy_mock_pool(&env);
+    let pool2 = deploy_mock_pool(&env);
+    let pool3 = deploy_mock_pool(&env);
+
+    client.register_pool(&pool1);
+    client.register_pool(&pool2);
+    client.register_pool(&pool3);
+
+    assert_eq!(client.get_pool_count(), 3);
+    assert!(client.is_pool_registered(&pool1));
+    assert!(client.is_pool_registered(&pool2));
+    assert!(client.is_pool_registered(&pool3));
+}
+
+#[test]
+fn test_swap_volume_tracking() {
+    let env = setup_env();
+    let (_, _, client) = deploy_router(&env);
+    let pool = deploy_mock_pool(&env);
+    client.register_pool(&pool);
+
+    assert_eq!(client.get_total_swap_volume(), 0);
+
+    simple_swap(&env, &client, &pool); // amount_in = 1000
+    assert_eq!(client.get_total_swap_volume(), 1000);
+
+    simple_swap(&env, &client, &pool);
+    assert_eq!(client.get_total_swap_volume(), 2000);
+
+    simple_swap(&env, &client, &pool);
+    assert_eq!(client.get_total_swap_volume(), 3000);
+}
+
+#[test]
+fn test_extend_storage_ttl_updates_tracking() {
+    let env = setup_env();
+    let (_, _, client) = deploy_router(&env);
+
+    env.ledger().with_mut(|li| li.sequence_number = 5000);
+    client.extend_storage_ttl();
+
+    let status = client.get_ttl_status();
+    assert_eq!(status.last_extended_ledger, 5000);
+}
+
+#[test]
+fn test_multiple_extend_storage_ttl_calls() {
+    let env = setup_env();
+    let (_, _, client) = deploy_router(&env);
+    let pool = deploy_mock_pool(&env);
+    client.register_pool(&pool);
+
+    env.ledger().with_mut(|li| li.sequence_number = 1000);
+    client.extend_storage_ttl();
+
+    env.ledger().with_mut(|li| li.sequence_number = 2000);
+    client.extend_storage_ttl();
+
+    let status = client.get_ttl_status();
+    assert_eq!(status.last_extended_ledger, 2000);
+    assert_eq!(status.instance_ttl_remaining, INSTANCE_TTL_EXTEND_TO as u64);
+}
+
+#[test]
+fn test_ttl_warning_emitted_when_stale() {
+    let env = setup_env();
+    // Configure test env with large TTL limits so that mock contracts
+    // don't get archived when we advance the ledger far into the future.
+    env.ledger().with_mut(|li| {
+        li.min_persistent_entry_ttl = 5_000_000;
+        li.max_entry_ttl = 10_000_000;
+    });
+    let (_, _, client) = deploy_router(&env);
+    let pool = deploy_mock_pool(&env);
+    client.register_pool(&pool);
+
+    env.ledger().with_mut(|li| li.sequence_number = 1000);
+    client.extend_storage_ttl();
+
+    // Advance past pool TTL threshold (90d - 22d = 68d elapsed).
+    // check_ttl_health fires when elapsed > POOL_TTL_EXTEND_TO - POOL_TTL_THRESHOLD.
+    let target_ledger = 1000 + POOL_TTL_EXTEND_TO - POOL_TTL_THRESHOLD + 1;
+    env.ledger()
+        .with_mut(|li| li.sequence_number = target_ledger);
+
+    let events_before = env.events().all().len();
+    // This swap triggers check_ttl_health which should emit ttl_warning
+    simple_swap(&env, &client, &pool);
+    assert!(env.events().all().len() > events_before);
+}
+
+#[test]
+fn test_ttl_status_pools_remaining_accurate() {
+    let env = setup_env();
+    let (_, _, client) = deploy_router(&env);
+    let pool = deploy_mock_pool(&env);
+    client.register_pool(&pool);
+
+    env.ledger().with_mut(|li| li.sequence_number = 1000);
+    client.extend_storage_ttl();
+
+    // Advance by 10 days worth of ledgers
+    let ten_days = 10 * 17_280;
+    env.ledger()
+        .with_mut(|li| li.sequence_number = 1000 + ten_days);
+
+    let status = client.get_ttl_status();
+    assert_eq!(
+        status.instance_ttl_remaining,
+        (INSTANCE_TTL_EXTEND_TO - ten_days) as u64
+    );
+    assert_eq!(status.pools_min_ttl, (POOL_TTL_EXTEND_TO - ten_days) as u64);
+    assert!(!status.needs_extension);
+}
+
+#[test]
+fn test_pause_extends_instance_ttl() {
+    let env = setup_env();
+    let (_, _, client) = deploy_router(&env);
+    // pause should not panic (it now calls extend_instance_ttl)
+    client.pause();
+    client.unpause();
+}
+
+#[test]
+fn test_extend_storage_ttl_idempotent() {
+    let env = setup_env();
+    let (_, _, client) = deploy_router(&env);
+    let pool = deploy_mock_pool(&env);
+    client.register_pool(&pool);
+
+    // Calling multiple times at the same ledger should be safe
+    client.extend_storage_ttl();
+    client.extend_storage_ttl();
+    client.extend_storage_ttl();
+
+    let status = client.get_ttl_status();
+    assert!(!status.needs_extension);
 }

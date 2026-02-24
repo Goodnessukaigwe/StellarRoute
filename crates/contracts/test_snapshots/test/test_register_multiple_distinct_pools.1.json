@@ -214,7 +214,7 @@
             },
             "ext": "v0"
           },
-          518400
+          1555200
         ]
       ],
       [
@@ -259,7 +259,7 @@
             },
             "ext": "v0"
           },
-          518400
+          1555200
         ]
       ],
       [
@@ -304,7 +304,7 @@
             },
             "ext": "v0"
           },
-          518400
+          1555200
         ]
       ],
       [
@@ -370,6 +370,18 @@
                         "key": {
                           "vec": [
                             {
+                              "symbol": "LastTtlExtension"
+                            }
+                          ]
+                        },
+                        "val": {
+                          "u32": 0
+                        }
+                      },
+                      {
+                        "key": {
+                          "vec": [
+                            {
                               "symbol": "Paused"
                             }
                           ]
@@ -389,6 +401,28 @@
                         "val": {
                           "u32": 3
                         }
+                      },
+                      {
+                        "key": {
+                          "vec": [
+                            {
+                              "symbol": "PoolList"
+                            }
+                          ]
+                        },
+                        "val": {
+                          "vec": [
+                            {
+                              "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                            },
+                            {
+                              "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                            },
+                            {
+                              "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+                            }
+                          ]
+                        }
                       }
                     ]
                   }
@@ -397,7 +431,7 @@
             },
             "ext": "v0"
           },
-          120960
+          518400
         ]
       ],
       [
@@ -514,7 +548,7 @@
             },
             "ext": "v0"
           },
-          120960
+          518400
         ]
       ]
     ]

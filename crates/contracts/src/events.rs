@@ -44,3 +44,13 @@ pub fn swap_executed(
         (amount_in, amount_out, fee, route, e.ledger().sequence()),
     );
 }
+
+pub fn ttl_extended(e: &Env, pools_extended: u32, ledger: u32) {
+    let topics = (Symbol::new(e, "StellarRoute"), symbol_short!("ttl_ext"));
+    e.events().publish(topics, (pools_extended, ledger));
+}
+
+pub fn ttl_warning(e: &Env, estimated_remaining: u64, threshold: u32) {
+    let topics = (Symbol::new(e, "StellarRoute"), symbol_short!("ttl_wrn"));
+    e.events().publish(topics, (estimated_remaining, threshold));
+}
