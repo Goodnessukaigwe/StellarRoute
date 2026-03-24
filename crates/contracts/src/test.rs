@@ -18,7 +18,8 @@ use super::{
     errors::ContractError,
     router::{StellarRoute, StellarRouteClient},
     storage::{
-        INSTANCE_TTL_EXTEND_TO, INSTANCE_TTL_THRESHOLD, POOL_TTL_EXTEND_TO, POOL_TTL_THRESHOLD,
+        get_nonce, INSTANCE_TTL_EXTEND_TO, INSTANCE_TTL_THRESHOLD, POOL_TTL_EXTEND_TO,
+        POOL_TTL_THRESHOLD,
     },
     types::{
         Asset, FeeConfig, FeeRecipient, PoolType, ProposalAction, Route, RouteHop, SwapParams,
@@ -775,7 +776,7 @@ fn test_swap_zero_amount_produces_zero_output() {
     let (_, _, client) = deploy_router(&env);
     let pool = deploy_mock_pool(&env);
     client.register_pool(&pool);
-    let result = client.execute_swap(
+    let result = client.try_execute_swap(
         &Address::generate(&env),
         &swap_params_for(
             &env,
@@ -785,7 +786,58 @@ fn test_swap_zero_amount_produces_zero_output() {
             current_seq(&env) + 100,
         ),
     );
-    assert_eq!(result.amount_out, 0);
+    assert_eq!(result, Err(Ok(ContractError::InvalidAmount)));
+}
+
+#[test]
+fn test_swap_enforces_route_min_output() {
+    let env = setup_env();
+    let (_, _, client) = deploy_router(&env);
+    let pool = deploy_mock_pool(&env);
+    client.register_pool(&pool);
+
+    let mut route = make_route(&env, &pool, 1);
+    route.min_output = 990;
+
+    let result = client.try_execute_swap(
+        &Address::generate(&env),
+        &swap_params_for(&env, route, 1000, 900, current_seq(&env) + 100),
+    );
+
+    assert_eq!(result, Err(Ok(ContractError::SlippageExceeded)));
+}
+
+#[test]
+fn test_swap_rejects_contract_as_recipient() {
+    let env = setup_env();
+    let (_, _, client) = deploy_router(&env);
+    let pool = deploy_mock_pool(&env);
+    client.register_pool(&pool);
+
+    let mut params = swap_params_for(&env, make_route(&env, &pool, 1), 1000, 0, current_seq(&env) + 100);
+    params.recipient = client.address.clone();
+
+    let result = client.try_execute_swap(&Address::generate(&env), &params);
+    assert_eq!(result, Err(Ok(ContractError::InvalidRecipient)));
+}
+
+#[test]
+fn test_failed_swap_does_not_increment_nonce() {
+    let env = setup_env();
+    let (_, _, client) = deploy_router(&env);
+    let pool = deploy_failing_pool(&env);
+    client.register_pool(&pool);
+    let sender = Address::generate(&env);
+
+    let before = get_nonce(&env, sender.clone());
+    let result = client.try_execute_swap(
+        &sender,
+        &swap_params_for(&env, make_route(&env, &pool, 1), 1000, 0, current_seq(&env) + 100),
+    );
+    let after = get_nonce(&env, sender.clone());
+
+    assert_eq!(result, Err(Ok(ContractError::PoolCallFailed)));
+    assert_eq!(before, after);
 }
 
 #[test]

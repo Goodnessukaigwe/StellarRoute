@@ -24,6 +24,7 @@ pub enum ContractError {
     ReserveManipulationDetected = 32,
     InvalidAmount = 40,
     Overflow = 41,
+    InvalidRecipient = 42,
     // ── Multi-sig governance ─────────────────────────────────────────────────
     /// Contract is in multi-sig mode; use governance proposals instead.
     UseGovernance = 50,

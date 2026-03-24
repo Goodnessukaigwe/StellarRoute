@@ -132,11 +132,14 @@ async fn find_best_price(
     let base_id = find_asset_id(state, base).await?;
     let quote_id = find_asset_id(state, quote).await?;
 
-    // Find best offer
-    let row = sqlx::query(
+        // Find best offer
+        let row = sqlx::query(
         r#"
-        select price::text as price
-        from sdex_offers
+                select
+                    venue_type,
+                    venue_ref,
+                    price::text as price
+                from normalized_liquidity
         where selling_asset_id = $1
           and buying_asset_id = $2
         order by price asc
@@ -150,15 +153,22 @@ async fn find_best_price(
 
     match row {
         Some(row) => {
+            let venue_type: String = row.get("venue_type");
+            let venue_ref: String = row.get("venue_ref");
             let price_str: String = row.get("price");
             let price_f64: f64 = price_str.parse().unwrap_or(0.0);
+            let source = if venue_type == "amm" {
+                format!("amm:{}", venue_ref)
+            } else {
+                "sdex".to_string()
+            };
 
             // Create simple path
             let path = vec![PathStep {
                 from_asset: asset_path_to_info(base),
                 to_asset: asset_path_to_info(quote),
                 price: format!("{:.7}", price_f64),
-                source: "sdex".to_string(),
+                source,
             }];
 
             Ok((price_f64, path))

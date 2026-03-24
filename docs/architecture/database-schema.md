@@ -4,6 +4,29 @@
 
 StellarRoute uses PostgreSQL to store SDEX orderbook data, trading pairs, and historical snapshots. The schema is designed for high performance with proper normalization and strategic denormalization where needed.
 
+## Unified Liquidity Surface (SDEX + AMM)
+
+To support a single read surface for routing and quoting, Phase 1.5 adds:
+
+- `amm_pool_reserves`: latest indexed AMM reserve state per pool and pair
+- `normalized_liquidity` (view): `union all` projection over `sdex_offers` and `amm_pool_reserves`
+
+The unified shape is:
+
+- `venue_type` (`sdex` or `amm`)
+- `venue_ref` (offer ID or AMM pool address)
+- `selling_asset_id`
+- `buying_asset_id`
+- `price`
+- `available_amount`
+- `source_ledger`
+- `updated_at`
+
+Backward compatibility:
+
+- Existing orderbook reads can continue to query `sdex_offers` unchanged.
+- Quote/routing reads can move to `normalized_liquidity` without changing request/response contracts.
+
 ## Entity Relationship Diagram
 
 ```

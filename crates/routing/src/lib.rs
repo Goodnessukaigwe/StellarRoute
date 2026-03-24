@@ -3,6 +3,7 @@
 //! Provides pathfinding algorithms for optimal swap routing across SDEX and Soroban AMM pools.
 
 pub mod error;
+pub mod normalization;
 pub mod pathfinder;
 
 /// Routing engine

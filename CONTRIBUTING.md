@@ -122,6 +122,20 @@ Prefer rebasing over merging to keep a clean history.
 - Prefer `tracing` over `println!` / `eprintln!` for logging.
 - Document public items with `///` doc comments.
 
+### Contract Security Checks
+
+CI enforces contract-focused static and dependency checks:
+
+- `cargo clippy -p stellarroute-contracts --all-targets -- -D warnings`
+- `cargo audit`
+
+Run the same commands locally before opening a PR:
+
+```bash
+cargo clippy -p stellarroute-contracts --all-targets -- -D warnings
+cargo audit
+```
+
 ```bash
 # Handy pre-commit check
 cargo fmt && cargo clippy -- -D warnings && cargo test

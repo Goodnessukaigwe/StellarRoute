@@ -662,7 +662,9 @@ impl StellarRoute {
             fee_amount,
             route: route.clone(),
             valid_until: (e.ledger().sequence() as u64).saturating_add(120),
-        })
+        };
+
+        Ok(quote)
     }
 
     pub fn execute_swap(
@@ -714,6 +716,20 @@ impl StellarRoute {
         sender: &Address,
         params: &SwapParams,
     ) -> Result<SwapResult, ContractError> {
+        if params.amount_in <= 0 {
+            return Err(ContractError::InvalidAmount);
+        }
+        if params.min_amount_out < 0 || params.route.min_output < 0 {
+            return Err(ContractError::InvalidAmount);
+        }
+
+        if params.recipient == e.current_contract_address() {
+            return Err(ContractError::InvalidRecipient);
+        }
+        if params.recipient != *sender {
+            params.recipient.require_auth();
+        }
+
         // 1. Deadline check
         if e.ledger().sequence() as u64 > params.deadline {
             return Err(ContractError::DeadlineExceeded);
@@ -727,6 +743,14 @@ impl StellarRoute {
         // 3. Route validation
         if params.route.hops.is_empty() || params.route.hops.len() > 4 {
             return Err(ContractError::InvalidRoute);
+        }
+
+        // Ensure pool support before any transfers for fail-fast safety.
+        for i in 0..params.route.hops.len() {
+            let hop = params.route.hops.get(i).unwrap();
+            if !storage::is_supported_pool(e, hop.pool.clone()) {
+                return Err(ContractError::PoolNotSupported);
+            }
         }
 
         // 4. Rate limiting (if MEV config is set)
@@ -798,10 +822,6 @@ impl StellarRoute {
         for i in 0..params.route.hops.len() {
             let hop = params.route.hops.get(i).unwrap();
 
-            if !storage::is_supported_pool(e, hop.pool.clone()) {
-                return Err(ContractError::PoolNotSupported);
-            }
-
             let call_result = e.try_invoke_contract::<i128, soroban_sdk::Error>(
                 &hop.pool,
                 &symbol_short!("swap"),
@@ -854,8 +874,13 @@ impl StellarRoute {
             }
         }
 
-        // Standard slippage check
-        if final_output < params.min_amount_out {
+        // Standard slippage check: enforce both request and route minimums.
+        let required_min_out = if params.route.min_output > params.min_amount_out {
+            params.route.min_output
+        } else {
+            params.min_amount_out
+        };
+        if final_output < required_min_out {
             return Err(ContractError::SlippageExceeded);
         }
 
