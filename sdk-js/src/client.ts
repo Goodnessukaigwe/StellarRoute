@@ -4,8 +4,10 @@ import type {
   PairsResponse,
   PathStep,
   PriceQuote,
+  QuoteStalenessConfig,
   QuoteType,
 } from './types.js';
+import { DEFAULT_STALENESS_CONFIG, isQuoteStale, isQuoteExpired } from './types.js';
 
 const DEFAULT_TIMEOUT_MS = 10_000;
 
@@ -117,6 +119,43 @@ export class StellarRouteClient {
     if (amount !== undefined) params.set('amount', String(amount));
     const path = `/api/v1/quote/${encodeURIComponent(base)}/${encodeURIComponent(quote)}?${params}`;
     return this.request<PriceQuote>(path, opts);
+  }
+
+  /**
+   * Get a quote with staleness validation.
+   * Throws if the quote is stale or expired based on the provided config.
+   */
+  async getQuoteWithValidation(
+    base: string,
+    quote: string,
+    amount?: number,
+    type: QuoteType = 'sell',
+    stalenessConfig: QuoteStalenessConfig = DEFAULT_STALENESS_CONFIG,
+    opts?: FetchOptions,
+  ): Promise<PriceQuote> {
+    const quoteResponse = await this.getQuote(base, quote, amount, type, opts);
+    
+    // Check if expired (server-provided expiry)
+    if (isQuoteExpired(quoteResponse)) {
+      throw new StellarRouteApiError(
+        0,
+        'quote_expired',
+        'Quote has expired based on server-provided expiry time',
+        { expires_at: quoteResponse.expires_at }
+      );
+    }
+    
+    // Check if stale (client-side staleness detection)
+    if (stalenessConfig.reject_stale && isQuoteStale(quoteResponse, stalenessConfig)) {
+      throw new StellarRouteApiError(
+        0,
+        'quote_stale',
+        `Quote is stale (older than ${stalenessConfig.max_age_seconds} seconds)`,
+        { timestamp: quoteResponse.timestamp, max_age_seconds: stalenessConfig.max_age_seconds }
+      );
+    }
+    
+    return quoteResponse;
   }
 
   async getRoutes(
