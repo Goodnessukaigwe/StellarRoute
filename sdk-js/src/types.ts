@@ -49,7 +49,59 @@ export interface PriceQuote {
   total: string;
   quote_type: QuoteType;
   path: PathStep[];
+  /** Unix timestamp (ms) when this quote was generated */
   timestamp: number;
+  /** Unix timestamp (ms) when this quote expires and should be considered stale */
+  expires_at?: number;
+  /** Unix timestamp (ms) of the underlying data source (e.g., orderbook snapshot) */
+  source_timestamp?: number;
+  /** Time-to-live in seconds for client-side staleness detection */
+  ttl_seconds?: number;
+}
+
+/**
+ * Configuration for quote staleness detection
+ */
+export interface QuoteStalenessConfig {
+  /** Maximum quote age in seconds before considering stale (default: 30) */
+  max_age_seconds: number;
+  /** Whether to reject stale quotes on the client side */
+  reject_stale?: boolean;
+}
+
+/**
+ * Default staleness configuration
+ */
+export const DEFAULT_STALENESS_CONFIG: QuoteStalenessConfig = {
+  max_age_seconds: 30,
+  reject_stale: false,
+};
+
+/**
+ * Check if a quote is considered stale
+ */
+export function isQuoteStale(quote: PriceQuote, config: QuoteStalenessConfig = DEFAULT_STALENESS_CONFIG): boolean {
+  const now = Date.now();
+  const ageMs = now - quote.timestamp;
+  const maxAgeMs = config.max_age_seconds * 1000;
+  return ageMs > maxAgeMs;
+}
+
+/**
+ * Check if a quote has expired based on its expires_at field
+ */
+export function isQuoteExpired(quote: PriceQuote): boolean {
+  if (!quote.expires_at) return false;
+  return Date.now() > quote.expires_at;
+}
+
+/**
+ * Get remaining time until quote expires (in seconds), or null if no expiry
+ */
+export function getTimeUntilExpiry(quote: PriceQuote): number | null {
+  if (!quote.expires_at) return null;
+  const remaining = quote.expires_at - Date.now();
+  return remaining > 0 ? Math.floor(remaining / 1000) : 0;
 }
 
 export interface HealthStatus {
