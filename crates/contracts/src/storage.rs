@@ -18,6 +18,14 @@ pub enum StorageKey {
     // ── Instance — TTL tracking ────────────────────────────────────────
     PoolList,
     LastTtlExtension,
+    IsMultiSig,
+    Governance,
+    Guardian,
+    ProposalCounter,
+    ContractVersionKey,
+    PendingUpgradeKey,
+    TokenCount,
+    MevConfig,
     // ── Temporary (auto-expiring) ──────────────────────────────────────
     PendingUpgrade,
     Commitment(BytesN<32>),
@@ -31,28 +39,11 @@ pub enum StorageKey {
     TotalFeesCollected(Asset),
     TotalFeesBurned(Asset),
     DistributionHistory(Asset),
-    // ── Governance and upgrade keys ──────────────────────────────────────────
-    IsMultiSig,
-    Governance,
-    Guardian,
-    ProposalCounter,
+    // ── Additional Keys ─────────────────────────────────────────────────────
     ProposalEntry(u64),
-    ContractVersionKey,
-    PendingUpgradeKey,
     VersionHistory(u64),
     MigrationDone(u32, u32, u32),
-    // ── Token + MEV keys ─────────────────────────────────────────────────────
     AllowedToken(Asset),
-    TokenCount,
-    MevConfig,
-}
-
-#[derive(Clone, Debug)]
-pub struct InstanceConfig {
-    pub admin: Address,
-    pub fee_rate: u32,
-    pub fee_to: Option<Address>,
-    pub paused: bool,
 }
 
 // ── TTL Constants (in ledger sequences, ~5s per ledger) ──────────────────
@@ -590,4 +581,19 @@ pub fn get_distribution_history(e: &Env, asset: &Asset) -> Vec<DistributionRecor
         .persistent()
         .get(&StorageKey::DistributionHistory(asset.clone()))
         .unwrap_or_else(|| Vec::new(e))
+}
+
+// ── Additional helper functions ──────────────────────────────────────────────
+
+pub fn batch_check_pools(e: &Env, pools: &Vec<Address>) -> bool {
+    for pool in pools.iter() {
+        if !is_supported_pool(e, pool) {
+            return false;
+        }
+    }
+    true
+}
+
+pub fn get_instance_config(e: &Env) -> Option<FeeConfig> {
+    e.storage().instance().get(&StorageKey::FeeConfig)
 }
