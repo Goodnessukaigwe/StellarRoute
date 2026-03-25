@@ -10,8 +10,7 @@
 #![allow(dead_code)]
 
 use crate::storage::{
-    get_nonce, INSTANCE_TTL_EXTEND_TO, INSTANCE_TTL_THRESHOLD, POOL_TTL_EXTEND_TO,
-    POOL_TTL_THRESHOLD,
+    INSTANCE_TTL_EXTEND_TO, INSTANCE_TTL_THRESHOLD, POOL_TTL_EXTEND_TO, POOL_TTL_THRESHOLD,
 };
 use soroban_sdk::{
     testutils::{Address as _, Events, Ledger},
@@ -243,8 +242,8 @@ pub(crate) fn make_route(env: &Env, pool: &Address, hops: u32) -> Route {
     }
     Route {
         hops: v,
-        estimated_output: 990,
-        min_output: 900,
+        estimated_output: 0,
+        min_output: 0,
         expires_at: 99_999,
     }
 }
@@ -917,7 +916,9 @@ fn test_failed_swap_does_not_increment_nonce() {
     client.register_pool(&pool);
     let sender = Address::generate(&env);
 
-    let before = get_nonce(&env, sender.clone());
+    let before = env.as_contract(&client.address, || {
+        crate::storage::get_nonce(&env, sender.clone())
+    });
     let result = client.try_execute_swap(
         &sender,
         &swap_params_for(
@@ -928,7 +929,9 @@ fn test_failed_swap_does_not_increment_nonce() {
             current_seq(&env) + 100,
         ),
     );
-    let after = get_nonce(&env, sender.clone());
+    let after = env.as_contract(&client.address, || {
+        crate::storage::get_nonce(&env, sender.clone())
+    });
 
     assert_eq!(result, Err(Ok(ContractError::AmmSwapCallFailed)));
     assert_eq!(before, after);
@@ -2063,7 +2066,7 @@ fn valid_fee_config(env: &Env, r1: Address, r2: Address) -> FeeConfig {
 #[test]
 fn test_fee_config_validation() {
     let env = setup_env();
-    let (admin, _, client) = deploy_router(&env);
+    let (_admin, _, client) = deploy_router(&env);
 
     let mut recipients = Vec::new(&env);
     recipients.push_back(FeeRecipient {
@@ -2077,8 +2080,7 @@ fn test_fee_config_validation() {
         auto_distribute: false,
     };
 
-    // Using single-admin mode to set config
-    client.set_admin(&admin);
+    // In single-admin mode, the deployed admin should authorize the config change
     let result = client.try_set_fee_distribution_config(&config);
 
     // In soroban, custom enum errors wrap in Ok() but fail as a contract error

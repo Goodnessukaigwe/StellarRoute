@@ -241,11 +241,68 @@
                 "bytes": "0000000000000000000000000000000000000000000000000000000000000003"
               },
               {
-                "symbol": "set_admin"
+                "symbol": "set_fee_distribution_config"
               }
             ],
             "data": {
-              "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+              "map": [
+                {
+                  "key": {
+                    "symbol": "auto_distribute"
+                  },
+                  "val": {
+                    "bool": false
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "min_distribution"
+                  },
+                  "val": {
+                    "i128": {
+                      "hi": 0,
+                      "lo": 0
+                    }
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "recipients"
+                  },
+                  "val": {
+                    "vec": [
+                      {
+                        "map": [
+                          {
+                            "key": {
+                              "symbol": "address"
+                            },
+                            "val": {
+                              "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                            }
+                          },
+                          {
+                            "key": {
+                              "symbol": "label"
+                            },
+                            "val": {
+                              "symbol": "treasury"
+                            }
+                          },
+                          {
+                            "key": {
+                              "symbol": "share_bps"
+                            },
+                            "val": {
+                              "u32": 9999
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
             }
           }
         }
@@ -264,12 +321,12 @@
                 "symbol": "fn_return"
               },
               {
-                "symbol": "set_admin"
+                "symbol": "set_fee_distribution_config"
               }
             ],
             "data": {
               "error": {
-                "contract": 40
+                "contract": 100
               }
             }
           }
@@ -290,7 +347,7 @@
               },
               {
                 "error": {
-                  "contract": 40
+                  "contract": 100
                 }
               }
             ],
@@ -315,51 +372,83 @@
               },
               {
                 "error": {
-                  "contract": 40
+                  "contract": 100
                 }
               }
             ],
             "data": {
               "vec": [
                 {
-                  "string": "contract call failed"
+                  "string": "contract try_call failed"
                 },
                 {
-                  "symbol": "set_admin"
+                  "symbol": "set_fee_distribution_config"
                 },
                 {
                   "vec": [
                     {
-                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+                      "map": [
+                        {
+                          "key": {
+                            "symbol": "auto_distribute"
+                          },
+                          "val": {
+                            "bool": false
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "min_distribution"
+                          },
+                          "val": {
+                            "i128": {
+                              "hi": 0,
+                              "lo": 0
+                            }
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "recipients"
+                          },
+                          "val": {
+                            "vec": [
+                              {
+                                "map": [
+                                  {
+                                    "key": {
+                                      "symbol": "address"
+                                    },
+                                    "val": {
+                                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                                    }
+                                  },
+                                  {
+                                    "key": {
+                                      "symbol": "label"
+                                    },
+                                    "val": {
+                                      "symbol": "treasury"
+                                    }
+                                  },
+                                  {
+                                    "key": {
+                                      "symbol": "share_bps"
+                                    },
+                                    "val": {
+                                      "u32": 9999
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        }
+                      ]
                     }
                   ]
                 }
               ]
-            }
-          }
-        }
-      },
-      "failed_call": false
-    },
-    {
-      "event": {
-        "ext": "v0",
-        "contract_id": null,
-        "type_": "diagnostic",
-        "body": {
-          "v0": {
-            "topics": [
-              {
-                "symbol": "error"
-              },
-              {
-                "error": {
-                  "contract": 40
-                }
-              }
-            ],
-            "data": {
-              "string": "escalating error to panic"
             }
           }
         }
