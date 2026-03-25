@@ -4,6 +4,7 @@
 //! Supports N-hop paths with safety bounds, cycle prevention, and price impact calculation.
 
 pub mod error;
+pub mod health;
 pub mod impact;
 pub mod normalization;
 pub mod pathfinder;

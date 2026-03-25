@@ -146,6 +146,9 @@ pub struct QuoteResponse {
     /// Rationale for quote venue selection
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rationale: Option<QuoteRationaleMetadata>,
+    /// Venues excluded from routing and the reason for each exclusion
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exclusion_diagnostics: Option<ExclusionDiagnostics>,
 }
 
 /// Configuration for quote staleness detection
@@ -217,6 +220,33 @@ pub struct PathStep {
     pub to_asset: AssetInfo,
     pub price: String,
     pub source: String, // "sdex" or "amm:{pool_address}"
+}
+
+// ---------------------------------------------------------------------------
+// Exclusion diagnostics (local API types — routing types lack ToSchema)
+// ---------------------------------------------------------------------------
+
+/// Diagnostics about venues excluded from routing
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ExclusionDiagnostics {
+    pub excluded_venues: Vec<ExcludedVenueInfo>,
+}
+
+/// Details about a single excluded venue
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ExcludedVenueInfo {
+    pub venue_ref: String,
+    pub score: f64,
+    pub signals: serde_json::Value,
+    pub reason: ExclusionReason,
+}
+
+/// Reason a venue was excluded from routing
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case", tag = "type")]
+pub enum ExclusionReason {
+    PolicyThreshold { threshold: f64 },
+    Override,
 }
 
 /// Error response

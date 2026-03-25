@@ -6,6 +6,7 @@ use std::{sync::Arc, time::Duration};
 use tokio::sync::Mutex;
 
 use crate::cache::CacheManager;
+use stellarroute_routing::health::scorer::HealthScoringConfig;
 
 /// Cache policy configuration
 #[derive(Debug, Clone)]
@@ -58,6 +59,8 @@ pub struct AppState {
     pub cache_policy: CachePolicy,
     /// Cache hit/miss counters
     pub cache_metrics: Arc<CacheMetrics>,
+    /// Health scoring configuration
+    pub health_config: HealthScoringConfig,
 }
 
 impl AppState {
@@ -74,6 +77,7 @@ impl AppState {
             version: env!("CARGO_PKG_VERSION").to_string(),
             cache_policy,
             cache_metrics: Arc::new(CacheMetrics::default()),
+            health_config: HealthScoringConfig::default(),
         }
     }
 
@@ -94,6 +98,7 @@ impl AppState {
             version: env!("CARGO_PKG_VERSION").to_string(),
             cache_policy,
             cache_metrics: Arc::new(CacheMetrics::default()),
+            health_config: HealthScoringConfig::default(),
         }
     }
 
