@@ -177,15 +177,6 @@ pub fn batch_check_pools(e: &Env, pools: &Vec<Address>) -> bool {
     true
 }
 
-pub fn get_instance_config(e: &Env) -> InstanceConfig {
-    InstanceConfig {
-        admin: get_admin(e),
-        fee_rate: get_fee_rate(e),
-        fee_to: get_fee_to_optional(e),
-        paused: get_paused(e),
-    }
-}
-
 /// Get the list of all registered pool addresses (for TTL enumeration).
 pub fn get_pool_list(e: &Env) -> Vec<Address> {
     e.storage()
@@ -581,19 +572,4 @@ pub fn get_distribution_history(e: &Env, asset: &Asset) -> Vec<DistributionRecor
         .persistent()
         .get(&StorageKey::DistributionHistory(asset.clone()))
         .unwrap_or_else(|| Vec::new(e))
-}
-
-// ── Additional helper functions ──────────────────────────────────────────────
-
-pub fn batch_check_pools(e: &Env, pools: &Vec<Address>) -> bool {
-    for pool in pools.iter() {
-        if !is_supported_pool(e, pool) {
-            return false;
-        }
-    }
-    true
-}
-
-pub fn get_instance_config(e: &Env) -> Option<FeeConfig> {
-    e.storage().instance().get(&StorageKey::FeeConfig)
 }

@@ -143,6 +143,9 @@ pub struct QuoteResponse {
     /// Time-to-live in seconds for client-side staleness detection
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ttl_seconds: Option<u32>,
+    /// Rationale for quote venue selection
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rationale: Option<QuoteRationaleMetadata>,
 }
 
 /// Configuration for quote staleness detection
@@ -170,20 +173,20 @@ impl QuoteResponse {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
             .as_millis() as i64;
-        
+
         let age_ms = now - self.timestamp;
         let max_age_ms = config.max_age_seconds as i64 * 1000;
-        
+
         age_ms > max_age_ms
     }
-    
+
     /// Create a quote response with expiry metadata
     pub fn with_expiry(mut self, ttl_seconds: u32) -> Self {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
             .as_millis() as i64;
-        
+
         self.expires_at = Some(now + (ttl_seconds as i64 * 1000));
         self.ttl_seconds = Some(ttl_seconds);
         self

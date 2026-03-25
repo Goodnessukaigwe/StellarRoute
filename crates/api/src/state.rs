@@ -1,9 +1,9 @@
 //! Shared application state
 
 use sqlx::PgPool;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::{sync::Arc, time::Duration};
 use tokio::sync::Mutex;
-use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::cache::CacheManager;
 
@@ -83,7 +83,11 @@ impl AppState {
     }
 
     /// Create new application state with cache and explicit cache policy
-    pub fn with_cache_and_policy(db: PgPool, cache: CacheManager, cache_policy: CachePolicy) -> Self {
+    pub fn with_cache_and_policy(
+        db: PgPool,
+        cache: CacheManager,
+        cache_policy: CachePolicy,
+    ) -> Self {
         Self {
             db,
             cache: Some(Arc::new(Mutex::new(cache))),

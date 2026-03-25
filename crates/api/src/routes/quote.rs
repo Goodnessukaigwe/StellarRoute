@@ -121,22 +121,18 @@ pub async fn get_quote(
         total: format!("{:.7}", total),
         quote_type: quote_type.to_string(),
         path,
-        rationale,
         timestamp,
         expires_at,
         source_timestamp: None,
         ttl_seconds,
+        rationale: Some(rationale),
     };
 
     // Cache the response (TTL: 2 seconds for quote data)
     if let Some(cache) = &state.cache {
         if let Ok(mut cache) = cache.try_lock() {
             let _ = cache
-                .set(
-                    &quote_cache_key,
-                    &response,
-                    state.cache_policy.quote_ttl,
-                )
+                .set(&quote_cache_key, &response, state.cache_policy.quote_ttl)
                 .await;
         }
     }
@@ -176,10 +172,7 @@ async fn find_best_price(
         .map(|row| DirectVenueCandidate {
             venue_type: row.get("venue_type"),
             venue_ref: row.get("venue_ref"),
-            price: row
-                .get::<String, _>("price")
-                .parse::<f64>()
-                .unwrap_or(0.0),
+            price: row.get::<String, _>("price").parse::<f64>().unwrap_or(0.0),
             available_amount: row
                 .get::<String, _>("available_amount")
                 .parse::<f64>()
@@ -379,7 +372,12 @@ fn asset_path_to_info(asset: &AssetPath) -> AssetInfo {
 mod tests {
     use super::*;
 
-    fn candidate(venue_type: &str, venue_ref: &str, price: f64, available_amount: f64) -> DirectVenueCandidate {
+    fn candidate(
+        venue_type: &str,
+        venue_ref: &str,
+        price: f64,
+        available_amount: f64,
+    ) -> DirectVenueCandidate {
         DirectVenueCandidate {
             venue_type: venue_type.to_string(),
             venue_ref: venue_ref.to_string(),

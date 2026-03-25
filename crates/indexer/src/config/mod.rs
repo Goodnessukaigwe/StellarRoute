@@ -5,12 +5,26 @@ pub struct IndexerConfig {
     /// Horizon base URL, e.g. `https://horizon.stellar.org` or `https://horizon-testnet.stellar.org`
     pub stellar_horizon_url: String,
 
+    /// Soroban RPC base URL
+    pub soroban_rpc_url: String,
+
+    /// Router contract address for AMM pool discovery
+    pub router_contract_address: String,
+
     /// Postgres connection string
     pub database_url: String,
 
     /// Poll interval for Horizon when streaming is not used yet.
     #[serde(default = "default_poll_interval_secs")]
     pub poll_interval_secs: u64,
+
+    /// Poll interval for AMM pool updates
+    #[serde(default = "default_amm_poll_interval_secs")]
+    pub amm_poll_interval_secs: u64,
+
+    /// Stale pool threshold in seconds
+    #[serde(default = "default_stale_threshold_secs")]
+    pub stale_threshold_secs: u64,
 
     /// Max records to request per page (Horizon supports `limit`).
     #[serde(default = "default_horizon_limit")]
@@ -39,6 +53,14 @@ pub struct IndexerConfig {
 
 fn default_poll_interval_secs() -> u64 {
     2
+}
+
+fn default_amm_poll_interval_secs() -> u64 {
+    30
+}
+
+fn default_stale_threshold_secs() -> u64 {
+    300
 }
 
 fn default_horizon_limit() -> u32 {

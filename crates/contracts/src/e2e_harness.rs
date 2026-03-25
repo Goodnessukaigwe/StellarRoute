@@ -198,7 +198,12 @@ fn e2e_direct_swap_output_less_than_input() {
     for amount in [100_i128, 1_000, 50_000, 1_000_000] {
         let result = client.execute_swap(
             &Address::generate(&env),
-            &swap_params(&env, multi_pool_route(&env, &[pool.clone()]), amount, 0),
+            &swap_params(
+                &env,
+                multi_pool_route(&env, core::slice::from_ref(&pool)),
+                amount,
+                0,
+            ),
         );
         assert!(
             result.amount_out < amount,
@@ -396,16 +401,16 @@ fn e2e_multi_hop_more_hops_less_output() {
 
     let r1 = client.execute_swap(
         &Address::generate(&env),
-        &swap_params(&env, multi_pool_route(&env, &[p1.clone()]), amount, 0),
-    );
-    let r4 = client.execute_swap(
-        &Address::generate(&env),
         &swap_params(
             &env,
-            multi_pool_route(&env, &[p1, p2, p3, p4]),
+            multi_pool_route(&env, core::slice::from_ref(&p1)),
             amount,
             0,
         ),
+    );
+    let r4 = client.execute_swap(
+        &Address::generate(&env),
+        &swap_params(&env, multi_pool_route(&env, &[p1, p2, p3, p4]), amount, 0),
     );
 
     assert!(
@@ -621,7 +626,7 @@ fn e2e_failure_broken_pool_returns_error() {
         &Address::generate(&env),
         &swap_params(&env, multi_pool_route(&env, &[pool]), 1_000, 0),
     );
-    assert_eq!(result, Err(Ok(ContractError::PoolCallFailed)));
+    assert_eq!(result, Err(Ok(ContractError::AmmSwapCallFailed)));
 }
 
 /// Nonce must NOT increment when a swap fails.
@@ -694,7 +699,7 @@ fn e2e_failure_mid_route_broken_pool_rollback() {
         &swap_params(&env, multi_pool_route(&env, &[p1, p2]), 10_000, 0),
     );
 
-    assert_eq!(result, Err(Ok(ContractError::PoolCallFailed)));
+    assert_eq!(result, Err(Ok(ContractError::AmmSwapCallFailed)));
     // Volume must be unchanged — the failed tx should not have committed
     assert_eq!(client.get_total_swap_volume(), vol_before);
 }
@@ -787,11 +792,11 @@ fn e2e_failure_empty_route_rejected() {
 
 fn default_mev_config() -> MevConfig {
     MevConfig {
-        commit_threshold: 100_000,
-        commit_window_ledgers: 50,
-        max_swaps_per_window: 3,
-        rate_limit_window: 100,
-        high_impact_threshold_bps: 500,
+        max_price_impact_bps: 500,
+        max_execution_spread_bps: 100,
+        rate_limit_window_ledgers: 100,
+        rate_limit_max_swaps: 3,
+        commitment_required_above: 100_000,
     }
 }
 
@@ -844,7 +849,12 @@ fn e2e_mev_rate_limit_blocks_excessive_swaps() {
     for _ in 0..3 {
         let result = client.try_execute_swap(
             &sender,
-            &swap_params(&env, multi_pool_route(&env, &[pool.clone()]), 1_000, 0),
+            &swap_params(
+                &env,
+                multi_pool_route(&env, core::slice::from_ref(&pool)),
+                1_000,
+                0,
+            ),
         );
         assert!(result.is_ok(), "swap within limit should succeed");
     }
@@ -873,9 +883,17 @@ fn e2e_mev_whitelisted_exempt_from_rate_limit() {
     for _ in 0..5 {
         let result = client.try_execute_swap(
             &sender,
-            &swap_params(&env, multi_pool_route(&env, &[pool.clone()]), 1_000, 0),
+            &swap_params(
+                &env,
+                multi_pool_route(&env, core::slice::from_ref(&pool)),
+                1_000,
+                0,
+            ),
         );
-        assert!(result.is_ok(), "whitelisted sender should never be rate-limited");
+        assert!(
+            result.is_ok(),
+            "whitelisted sender should never be rate-limited"
+        );
     }
 }
 
@@ -1010,7 +1028,12 @@ fn e2e_lifecycle_multi_user_volume_accumulation() {
     for i in 0..4u32 {
         let result = client.execute_swap(
             &Address::generate(&env),
-            &swap_params(&env, multi_pool_route(&env, &[pool.clone()]), amount, 0),
+            &swap_params(
+                &env,
+                multi_pool_route(&env, core::slice::from_ref(&pool)),
+                amount,
+                0,
+            ),
         );
         assert!(result.amount_out > 0);
         assert_eq!(client.get_total_swap_volume(), amount * (i as i128 + 1));
@@ -1028,7 +1051,12 @@ fn e2e_lifecycle_pause_mid_operation_then_resume() {
     // Swap 1: succeeds
     let r1 = client.execute_swap(
         &Address::generate(&env),
-        &swap_params(&env, multi_pool_route(&env, &[pool.clone()]), 1_000, 0),
+        &swap_params(
+            &env,
+            multi_pool_route(&env, core::slice::from_ref(&pool)),
+            1_000,
+            0,
+        ),
     );
     assert!(r1.amount_out > 0);
 
@@ -1038,7 +1066,12 @@ fn e2e_lifecycle_pause_mid_operation_then_resume() {
     // Swap 2: fails
     let r2 = client.try_execute_swap(
         &Address::generate(&env),
-        &swap_params(&env, multi_pool_route(&env, &[pool.clone()]), 1_000, 0),
+        &swap_params(
+            &env,
+            multi_pool_route(&env, core::slice::from_ref(&pool)),
+            1_000,
+            0,
+        ),
     );
     assert_eq!(r2, Err(Ok(ContractError::Paused)));
 
@@ -1067,7 +1100,12 @@ fn e2e_lifecycle_admin_change_does_not_affect_swaps() {
 
     let r1 = client.execute_swap(
         &Address::generate(&env),
-        &swap_params(&env, multi_pool_route(&env, &[pool.clone()]), 1_000, 0),
+        &swap_params(
+            &env,
+            multi_pool_route(&env, core::slice::from_ref(&pool)),
+            1_000,
+            0,
+        ),
     );
 
     // Change admin
@@ -1137,7 +1175,11 @@ fn val_initialize_fee_rate_above_max_rejected() {
         &Address::generate(&env),
         &1001_u32,
         &Address::generate(&env),
-        &None, &None, &None, &None, &None,
+        &None,
+        &None,
+        &None,
+        &None,
+        &None,
     );
     assert_eq!(result, Err(Ok(ContractError::InvalidAmount)));
 }
@@ -1148,12 +1190,18 @@ fn val_initialize_zero_fee_rate_accepted() {
     let env = setup();
     let id = env.register_contract(None, StellarRoute);
     let client = StellarRouteClient::new(&env, &id);
-    assert!(client.try_initialize(
-        &Address::generate(&env),
-        &0_u32,
-        &Address::generate(&env),
-        &None, &None, &None, &None, &None,
-    ).is_ok());
+    assert!(client
+        .try_initialize(
+            &Address::generate(&env),
+            &0_u32,
+            &Address::generate(&env),
+            &None,
+            &None,
+            &None,
+            &None,
+            &None,
+        )
+        .is_ok());
 }
 
 // ── set_admin() ───────────────────────────────────────────────────────────────
@@ -1210,73 +1258,73 @@ fn val_register_pool_duplicate_rejected() {
 
 fn valid_mev() -> MevConfig {
     MevConfig {
-        commit_threshold: 100_000,
-        commit_window_ledgers: 50,
-        max_swaps_per_window: 3,
-        rate_limit_window: 100,
-        high_impact_threshold_bps: 500,
+        max_price_impact_bps: 500,
+        max_execution_spread_bps: 100,
+        rate_limit_window_ledgers: 100,
+        rate_limit_max_swaps: 3,
+        commitment_required_above: 100_000,
     }
 }
 
-/// commit_threshold <= 0 must be rejected.
+/// commitment_required_above <= 0 must be rejected.
 #[test]
 fn val_configure_mev_zero_threshold_rejected() {
     let env = setup();
     let (_, client) = deploy_router(&env);
     let mut cfg = valid_mev();
-    cfg.commit_threshold = 0;
+    cfg.commitment_required_above = 0;
     assert_eq!(
         client.try_configure_mev(&cfg),
         Err(Ok(ContractError::InvalidAmount))
     );
 }
 
-/// commit_window_ledgers == 0 must be rejected.
+/// rate_limit_window_ledgers == 0 must be rejected.
 #[test]
 fn val_configure_mev_zero_window_rejected() {
     let env = setup();
     let (_, client) = deploy_router(&env);
     let mut cfg = valid_mev();
-    cfg.commit_window_ledgers = 0;
+    cfg.rate_limit_window_ledgers = 0;
     assert_eq!(
         client.try_configure_mev(&cfg),
         Err(Ok(ContractError::InvalidAmount))
     );
 }
 
-/// max_swaps_per_window == 0 must be rejected.
+/// rate_limit_max_swaps == 0 must be rejected.
 #[test]
 fn val_configure_mev_zero_max_swaps_rejected() {
     let env = setup();
     let (_, client) = deploy_router(&env);
     let mut cfg = valid_mev();
-    cfg.max_swaps_per_window = 0;
+    cfg.rate_limit_max_swaps = 0;
     assert_eq!(
         client.try_configure_mev(&cfg),
         Err(Ok(ContractError::InvalidAmount))
     );
 }
 
-/// rate_limit_window == 0 must be rejected.
+/// rate_limit_window_ledgers == 0 must be rejected.
 #[test]
 fn val_configure_mev_zero_rate_limit_window_rejected() {
     let env = setup();
     let (_, client) = deploy_router(&env);
     let mut cfg = valid_mev();
-    cfg.rate_limit_window = 0;
+    cfg.rate_limit_window_ledgers = 0;
     assert_eq!(
         client.try_configure_mev(&cfg),
         Err(Ok(ContractError::InvalidAmount))
     );
 }
 
-/// high_impact_threshold_bps > 10000 must be rejected.
+/// max_price_impact_bps > 10000 must be rejected.
 #[test]
 fn val_configure_mev_impact_bps_above_max_rejected() {
     let env = setup();
     let (_, client) = deploy_router(&env);
     let mut cfg = valid_mev();
-    cfg.high_impact_threshold_bps = 10_001;
+    cfg.max_price_impact_bps = 10_001;
     assert_eq!(
         client.try_configure_mev(&cfg),
         Err(Ok(ContractError::InvalidAmount))
@@ -1331,7 +1379,9 @@ fn val_swap_price_impact_bps_at_boundary_accepted() {
 
     let mut params = swap_params(&env, multi_pool_route(&env, &[pool]), 1_000, 0);
     params.max_price_impact_bps = 10_000;
-    assert!(client.try_execute_swap(&Address::generate(&env), &params).is_ok());
+    assert!(client
+        .try_execute_swap(&Address::generate(&env), &params)
+        .is_ok());
 }
 
 // ── commit_swap() ─────────────────────────────────────────────────────────────

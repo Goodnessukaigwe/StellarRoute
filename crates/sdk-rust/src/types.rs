@@ -198,12 +198,22 @@ pub struct QuoteRequest<'a> {
 impl<'a> QuoteRequest<'a> {
     /// Convenience constructor for a sell quote with no explicit amount.
     pub fn sell(base: &'a str, quote: &'a str) -> Self {
-        Self { base, quote, amount: None, quote_type: QuoteType::Sell }
+        Self {
+            base,
+            quote,
+            amount: None,
+            quote_type: QuoteType::Sell,
+        }
     }
 
     /// Convenience constructor for a buy quote with no explicit amount.
     pub fn buy(base: &'a str, quote: &'a str) -> Self {
-        Self { base, quote, amount: None, quote_type: QuoteType::Buy }
+        Self {
+            base,
+            quote,
+            amount: None,
+            quote_type: QuoteType::Buy,
+        }
     }
 }
 

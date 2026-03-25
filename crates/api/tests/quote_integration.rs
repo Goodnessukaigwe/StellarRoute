@@ -19,7 +19,11 @@ fn quote_response_includes_rationale_metadata() {
             price: "1.0000000".to_string(),
             source: "sdex".to_string(),
         }],
-        rationale: QuoteRationaleMetadata {
+        timestamp: 1_700_000_000,
+        expires_at: Some(1_700_000_030_000),
+        source_timestamp: None,
+        ttl_seconds: Some(30),
+        rationale: Some(QuoteRationaleMetadata {
             strategy: "single_hop_direct_venue_comparison".to_string(),
             selected_source: "sdex:offer-1".to_string(),
             compared_venues: vec![
@@ -36,8 +40,7 @@ fn quote_response_includes_rationale_metadata() {
                     executable: true,
                 },
             ],
-        },
-        timestamp: 1_700_000_000,
+        }),
     };
 
     let json = serde_json::to_value(&response).expect("serialization failed");
@@ -47,7 +50,13 @@ fn quote_response_includes_rationale_metadata() {
         "single_hop_direct_venue_comparison"
     );
     assert_eq!(json["rationale"]["selected_source"], "sdex:offer-1");
-    assert_eq!(json["rationale"]["compared_venues"].as_array().unwrap().len(), 2);
+    assert_eq!(
+        json["rationale"]["compared_venues"]
+            .as_array()
+            .unwrap()
+            .len(),
+        2
+    );
 }
 
 #[test]
@@ -75,5 +84,8 @@ fn rationale_venue_order_is_deterministic_in_json() {
     let amm_pos = json.find("amm:pool-a").expect("missing amm source");
     let sdex_pos = json.find("sdex:offer-a").expect("missing sdex source");
 
-    assert!(amm_pos < sdex_pos, "venue order should remain deterministic");
+    assert!(
+        amm_pos < sdex_pos,
+        "venue order should remain deterministic"
+    );
 }

@@ -108,7 +108,13 @@ pub mod keys {
     }
 
     /// Cache key for quote
-    pub fn quote(base: &str, quote: &str, amount: &str, slippage_bps: u32, quote_type: &str) -> String {
+    pub fn quote(
+        base: &str,
+        quote: &str,
+        amount: &str,
+        slippage_bps: u32,
+        quote_type: &str,
+    ) -> String {
         format!(
             "quote:{}:{}:{}:{}:{}",
             base, quote, amount, slippage_bps, quote_type
@@ -142,9 +148,6 @@ mod tests {
             keys::liquidity_revision("XLM", "USDC"),
             "liquidity:revision:XLM:USDC"
         );
-        assert_eq!(
-            keys::quote_pair_pattern("XLM", "USDC"),
-            "quote:XLM:USDC:*"
-        );
+        assert_eq!(keys::quote_pair_pattern("XLM", "USDC"), "quote:XLM:USDC:*");
     }
 }

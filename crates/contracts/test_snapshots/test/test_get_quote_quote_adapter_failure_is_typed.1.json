@@ -488,7 +488,7 @@
                       "val": {
                         "i128": {
                           "hi": 0,
-                          "lo": 990
+                          "lo": 0
                         }
                       }
                     },
@@ -564,7 +564,7 @@
                       "val": {
                         "i128": {
                           "hi": 0,
-                          "lo": 900
+                          "lo": 0
                         }
                       }
                     }
@@ -639,7 +639,7 @@
             "data": {
               "vec": [
                 {
-                  "string": "caught panic 'mock: quote call failed' from contract function 'Symbol(obj#169)'"
+                  "string": "caught panic 'mock: quote call failed' from contract function 'Symbol(obj#171)'"
                 },
                 {
                   "vec": [
@@ -841,7 +841,7 @@
                           "val": {
                             "i128": {
                               "hi": 0,
-                              "lo": 990
+                              "lo": 0
                             }
                           }
                         },
@@ -917,7 +917,7 @@
                           "val": {
                             "i128": {
                               "hi": 0,
-                              "lo": 900
+                              "lo": 0
                             }
                           }
                         }

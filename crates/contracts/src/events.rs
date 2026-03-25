@@ -228,7 +228,7 @@ pub fn commitment_revealed(e: &Env, sender: Address, commitment_hash: BytesN<32>
         symbol_short!("cmt_rvl"),
         sender,
     );
-    e.events().publish(topics, computed_hash);
+    e.events().publish(topics, commitment_hash);
 }
 
 pub fn ttl_extended(e: &Env, pools_extended: u32, ledger: u32) {

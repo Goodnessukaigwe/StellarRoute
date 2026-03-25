@@ -248,7 +248,7 @@
               "map": [
                 {
                   "key": {
-                    "symbol": "commit_threshold"
+                    "symbol": "commitment_required_above"
                   },
                   "val": {
                     "i128": {
@@ -259,15 +259,15 @@
                 },
                 {
                   "key": {
-                    "symbol": "commit_window_ledgers"
+                    "symbol": "max_execution_spread_bps"
                   },
                   "val": {
-                    "u32": 50
+                    "u32": 100
                   }
                 },
                 {
                   "key": {
-                    "symbol": "high_impact_threshold_bps"
+                    "symbol": "max_price_impact_bps"
                   },
                   "val": {
                     "u32": 500
@@ -275,7 +275,7 @@
                 },
                 {
                   "key": {
-                    "symbol": "max_swaps_per_window"
+                    "symbol": "rate_limit_max_swaps"
                   },
                   "val": {
                     "u32": 3
@@ -283,7 +283,7 @@
                 },
                 {
                   "key": {
-                    "symbol": "rate_limit_window"
+                    "symbol": "rate_limit_window_ledgers"
                   },
                   "val": {
                     "u32": 100
@@ -377,7 +377,7 @@
                       "map": [
                         {
                           "key": {
-                            "symbol": "commit_threshold"
+                            "symbol": "commitment_required_above"
                           },
                           "val": {
                             "i128": {
@@ -388,15 +388,15 @@
                         },
                         {
                           "key": {
-                            "symbol": "commit_window_ledgers"
+                            "symbol": "max_execution_spread_bps"
                           },
                           "val": {
-                            "u32": 50
+                            "u32": 100
                           }
                         },
                         {
                           "key": {
-                            "symbol": "high_impact_threshold_bps"
+                            "symbol": "max_price_impact_bps"
                           },
                           "val": {
                             "u32": 500
@@ -404,7 +404,7 @@
                         },
                         {
                           "key": {
-                            "symbol": "max_swaps_per_window"
+                            "symbol": "rate_limit_max_swaps"
                           },
                           "val": {
                             "u32": 3
@@ -412,7 +412,7 @@
                         },
                         {
                           "key": {
-                            "symbol": "rate_limit_window"
+                            "symbol": "rate_limit_window_ledgers"
                           },
                           "val": {
                             "u32": 100

@@ -163,7 +163,9 @@ impl SorobanRpc for SorobanRpcClient {
             .get("sequence")
             .and_then(serde_json::Value::as_u64)
             .ok_or_else(|| {
-                IndexerError::SorobanRpc("missing `sequence` in getLatestLedger response".to_string())
+                IndexerError::SorobanRpc(
+                    "missing `sequence` in getLatestLedger response".to_string(),
+                )
             })
     }
 
@@ -220,9 +222,9 @@ impl SorobanRpc for SorobanRpcClient {
                     )));
                 }
 
-                payload
-                    .result
-                    .ok_or_else(|| IndexerError::SorobanRpc("missing JSON-RPC `result`".to_string()))
+                payload.result.ok_or_else(|| {
+                    IndexerError::SorobanRpc("missing JSON-RPC `result`".to_string())
+                })
             }
         })
         .await
@@ -308,7 +310,10 @@ mod tests {
         })
         .unwrap();
 
-        let err = client.request("getLatestLedger", json!({})).await.unwrap_err();
+        let err = client
+            .request("getLatestLedger", json!({}))
+            .await
+            .unwrap_err();
         assert!(matches!(err, IndexerError::SorobanRpc(_)));
     }
 
@@ -344,7 +349,10 @@ mod tests {
         .unwrap();
 
         let pool = client.get_pool_state("CDUMMYPOOL").await.unwrap();
-        assert_eq!(pool.get("xdr").and_then(serde_json::Value::as_str), Some("AAAABBBB"));
+        assert_eq!(
+            pool.get("xdr").and_then(serde_json::Value::as_str),
+            Some("AAAABBBB")
+        );
     }
 
     #[tokio::test]

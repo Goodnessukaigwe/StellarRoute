@@ -9,6 +9,7 @@ use crate::config::IndexerConfig as Config;
 use crate::error::{IndexerError, Result};
 
 /// Database connection pool
+#[derive(Clone)]
 pub struct Database {
     pool: PgPool,
 }

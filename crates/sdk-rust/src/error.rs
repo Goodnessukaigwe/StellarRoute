@@ -118,7 +118,10 @@ impl SdkError {
     pub fn is_not_found(&self) -> bool {
         matches!(
             self,
-            Self::Api { code: ApiErrorCode::NotFound, .. }
+            Self::Api {
+                code: ApiErrorCode::NotFound,
+                ..
+            }
         )
     }
 

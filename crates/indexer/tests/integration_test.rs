@@ -1,9 +1,10 @@
 //! Integration tests for the indexer
 
+use stellarroute_indexer::amm::{AmmAggregator, AmmConfig};
 use stellarroute_indexer::config::IndexerConfig;
 use stellarroute_indexer::db::Database;
-use stellarroute_indexer::horizon::HorizonClient;
 use stellarroute_indexer::models::asset::Asset;
+use stellarroute_indexer::soroban::{SorobanRpc, SorobanRpcClient};
 use tracing::debug;
 
 #[tokio::test]
@@ -11,10 +12,14 @@ use tracing::debug;
 async fn test_database_connection() {
     let config = IndexerConfig {
         stellar_horizon_url: "https://horizon-testnet.stellar.org".to_string(),
+        soroban_rpc_url: "https://soroban-testnet.stellar.org".to_string(),
+        router_contract_address: "CDUMMYROUTER".to_string(),
         database_url: std::env::var("DATABASE_URL").unwrap_or_else(|_| {
             "postgresql://stellarroute:stellarroute_dev@localhost:5432/stellarroute".to_string()
         }),
         poll_interval_secs: 5,
+        amm_poll_interval_secs: 30,
+        stale_threshold_secs: 300,
         horizon_limit: 200,
         max_connections: 5,
         min_connections: 1,
@@ -30,17 +35,62 @@ async fn test_database_connection() {
 }
 
 #[tokio::test]
-#[ignore] // Requires Horizon API
-async fn test_horizon_client_get_offers() {
-    let client = HorizonClient::new("https://horizon-testnet.stellar.org");
-    let offers = client.get_offers(Some(10), None, None).await;
+#[ignore] // Requires Soroban RPC
+async fn test_soroban_client_get_latest_ledger() {
+    let client =
+        SorobanRpcClient::for_network(stellarroute_indexer::soroban::StellarNetwork::Testnet)
+            .expect("Failed to create Soroban client");
+    let ledger: Result<u64, _> = client.get_latest_ledger().await;
 
-    // Should succeed if Horizon API is accessible
-    assert!(offers.is_ok());
-    if let Ok(offers) = offers {
-        // May be empty, but should be a valid response
-        debug!(count = offers.len(), "Fetched offers");
+    assert!(ledger.is_ok());
+    if let Ok(ledger) = ledger {
+        debug!(ledger, "Latest ledger");
+        assert!(ledger > 0);
     }
+}
+
+#[tokio::test]
+#[ignore] // Requires database and Soroban RPC
+async fn test_amm_aggregator_initialization() {
+    let config = IndexerConfig {
+        stellar_horizon_url: "https://horizon-testnet.stellar.org".to_string(),
+        soroban_rpc_url: "https://soroban-testnet.stellar.org".to_string(),
+        router_contract_address: "CDUMMYROUTER".to_string(),
+        database_url: std::env::var("DATABASE_URL").unwrap_or_else(|_| {
+            "postgresql://stellarroute:stellarroute_dev@localhost:5432/stellarroute".to_string()
+        }),
+        poll_interval_secs: 5,
+        amm_poll_interval_secs: 30,
+        stale_threshold_secs: 300,
+        horizon_limit: 200,
+        max_connections: 5,
+        min_connections: 1,
+        connection_timeout_secs: 30,
+        idle_timeout_secs: 600,
+        max_lifetime_secs: 1800,
+    };
+
+    let db = Database::new(&config)
+        .await
+        .expect("Failed to connect to database");
+
+    let soroban =
+        SorobanRpcClient::for_network(stellarroute_indexer::soroban::StellarNetwork::Testnet)
+            .expect("Failed to create Soroban client");
+
+    let amm_config = AmmConfig {
+        router_contract: config.router_contract_address,
+        poll_interval_secs: config.amm_poll_interval_secs,
+        stale_threshold_secs: config.stale_threshold_secs,
+        batch_size: 10,
+    };
+
+    let aggregator = AmmAggregator::new(amm_config, db, soroban);
+
+    // Test a single aggregation cycle (should not fail even with dummy data)
+    let result = aggregator.aggregate_once().await;
+    // We expect this to succeed or fail gracefully
+    debug!("AMM aggregation result: {:?}", result);
 }
 
 #[test]

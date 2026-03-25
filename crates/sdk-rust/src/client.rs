@@ -87,9 +87,8 @@ impl ClientBuilder {
         let mut headers = header::HeaderMap::new();
         headers.insert(
             header::USER_AGENT,
-            header::HeaderValue::from_str(&self.user_agent).map_err(|e| {
-                SdkError::InvalidConfig(format!("Invalid User-Agent header: {e}"))
-            })?,
+            header::HeaderValue::from_str(&self.user_agent)
+                .map_err(|e| SdkError::InvalidConfig(format!("Invalid User-Agent header: {e}")))?,
         );
 
         let http = reqwest::Client::builder()
@@ -162,9 +161,9 @@ impl StellarRouteClient {
     // ── Internal helpers ──────────────────────────────────────────────────────
 
     fn url(&self, path: &str) -> Result<Url> {
-        self.base_url.join(path).map_err(|e| {
-            SdkError::InvalidConfig(format!("Invalid request path '{path}': {e}"))
-        })
+        self.base_url
+            .join(path)
+            .map_err(|e| SdkError::InvalidConfig(format!("Invalid request path '{path}': {e}")))
     }
 
     async fn get<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T> {

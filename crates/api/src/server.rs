@@ -89,7 +89,11 @@ impl Server {
                     };
 
                     (
-                        Arc::new(AppState::with_cache_and_policy(db, cache, cache_policy.clone())),
+                        Arc::new(AppState::with_cache_and_policy(
+                            db,
+                            cache,
+                            cache_policy.clone(),
+                        )),
                         rate_limit,
                     )
                 }

@@ -7,9 +7,7 @@
 //! Run with:
 //!   cargo test -p stellarroute-sdk
 
-use stellarroute_sdk::{
-    ApiErrorCode, ClientBuilder, QuoteRequest, QuoteType, SdkError,
-};
+use stellarroute_sdk::{ApiErrorCode, ClientBuilder, QuoteRequest, QuoteType, SdkError};
 use wiremock::{
     matchers::{method, path, query_param},
     Mock, MockServer, ResponseTemplate,
@@ -44,7 +42,10 @@ async fn health_returns_healthy_response() {
     let resp = client(&server).health().await.unwrap();
     assert!(resp.is_healthy());
     assert_eq!(resp.version, "0.1.0");
-    assert_eq!(resp.components.get("database").map(String::as_str), Some("healthy"));
+    assert_eq!(
+        resp.components.get("database").map(String::as_str),
+        Some("healthy")
+    );
 }
 
 #[tokio::test]
@@ -136,11 +137,18 @@ async fn orderbook_not_found_maps_to_typed_error() {
         .mount(&server)
         .await;
 
-    let err = client(&server).orderbook("native", "GHOST").await.unwrap_err();
+    let err = client(&server)
+        .orderbook("native", "GHOST")
+        .await
+        .unwrap_err();
     assert!(err.is_not_found());
     assert_eq!(err.status_code(), Some(404));
     match err {
-        SdkError::Api { code, message, status } => {
+        SdkError::Api {
+            code,
+            message,
+            status,
+        } => {
             assert_eq!(code, ApiErrorCode::NotFound);
             assert_eq!(status, 404);
             assert!(!message.is_empty());
@@ -303,7 +311,10 @@ async fn unknown_api_error_code_maps_to_other_variant() {
 
     let err = client(&server).pairs().await.unwrap_err();
     match err {
-        SdkError::Api { code: ApiErrorCode::Other(s), .. } => {
+        SdkError::Api {
+            code: ApiErrorCode::Other(s),
+            ..
+        } => {
             assert_eq!(s, "service_unavailable");
         }
         other => panic!("expected Api/Other, got {other:?}"),
@@ -334,7 +345,9 @@ fn invalid_url_returns_config_error() {
 #[test]
 fn valid_url_builds_successfully() {
     assert!(ClientBuilder::new("http://localhost:3000").build().is_ok());
-    assert!(ClientBuilder::new("https://api.stellarroute.io").build().is_ok());
+    assert!(ClientBuilder::new("https://api.stellarroute.io")
+        .build()
+        .is_ok());
 }
 
 // ── Type helpers ──────────────────────────────────────────────────────────────
@@ -365,10 +378,22 @@ fn api_error_code_roundtrip() {
     use stellarroute_sdk::ApiErrorCode;
 
     assert_eq!(ApiErrorCode::from_str("not_found"), ApiErrorCode::NotFound);
-    assert_eq!(ApiErrorCode::from_str("rate_limit_exceeded"), ApiErrorCode::RateLimitExceeded);
-    assert_eq!(ApiErrorCode::from_str("validation_error"), ApiErrorCode::ValidationError);
-    assert_eq!(ApiErrorCode::from_str("invalid_asset"), ApiErrorCode::InvalidAsset);
-    assert_eq!(ApiErrorCode::from_str("internal_error"), ApiErrorCode::InternalError);
+    assert_eq!(
+        ApiErrorCode::from_str("rate_limit_exceeded"),
+        ApiErrorCode::RateLimitExceeded
+    );
+    assert_eq!(
+        ApiErrorCode::from_str("validation_error"),
+        ApiErrorCode::ValidationError
+    );
+    assert_eq!(
+        ApiErrorCode::from_str("invalid_asset"),
+        ApiErrorCode::InvalidAsset
+    );
+    assert_eq!(
+        ApiErrorCode::from_str("internal_error"),
+        ApiErrorCode::InternalError
+    );
 
     let other = ApiErrorCode::from_str("custom_code");
     assert_eq!(other.as_str(), "custom_code");

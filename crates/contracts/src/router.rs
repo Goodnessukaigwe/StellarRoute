@@ -2,14 +2,14 @@ use crate::adapters::AmmAdapter;
 use crate::errors::ContractError;
 use crate::events;
 use crate::storage::{
-    self, batch_check_pools, extend_instance_ttl, get_fee_rate,
-    increment_nonce, transfer_asset, StorageKey, INSTANCE_TTL_EXTEND_TO, POOL_TTL_EXTEND_TO,
-    INSTANCE_TTL_THRESHOLD, POOL_TTL_THRESHOLD,
+    self, batch_check_pools, extend_instance_ttl, get_fee_rate, increment_nonce, transfer_asset,
+    StorageKey, INSTANCE_TTL_EXTEND_TO, INSTANCE_TTL_THRESHOLD, POOL_TTL_EXTEND_TO,
+    POOL_TTL_THRESHOLD,
 };
 use crate::types::{
     CommitmentData, ContractVersion, DistributionRecord, FeeConfig, GovernanceConfig, MevConfig,
-    Proposal, ProposalAction, QuoteResult, Route, SwapParams, SwapResult, TokenCategory, TokenInfo,
-    TTLStatus,
+    Proposal, ProposalAction, QuoteResult, Route, SwapParams, SwapResult, TTLStatus, TokenCategory,
+    TokenInfo,
 };
 use crate::{governance, tokens, upgrade};
 use soroban_sdk::{
@@ -463,19 +463,19 @@ impl StellarRoute {
 
     pub fn configure_mev(e: Env, config: MevConfig) -> Result<(), ContractError> {
         storage::get_admin(&e).require_auth();
-        if config.commit_threshold <= 0 {
+        if config.commitment_required_above <= 0 {
             return Err(ContractError::InvalidAmount);
         }
-        if config.commit_window_ledgers == 0 {
+        if config.rate_limit_window_ledgers == 0 {
             return Err(ContractError::InvalidAmount);
         }
-        if config.max_swaps_per_window == 0 {
+        if config.rate_limit_max_swaps == 0 {
             return Err(ContractError::InvalidAmount);
         }
-        if config.rate_limit_window == 0 {
+        if config.max_price_impact_bps > 10_000 {
             return Err(ContractError::InvalidAmount);
         }
-        if config.high_impact_threshold_bps > 10_000 {
+        if config.max_execution_spread_bps > 10_000 {
             return Err(ContractError::InvalidAmount);
         }
         storage::set_mev_config(&e, &config);

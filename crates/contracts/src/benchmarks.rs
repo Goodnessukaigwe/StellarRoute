@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use crate::router::{StellarRoute, StellarRouteClient};
 use crate::types::SwapParams;
 use soroban_sdk::{testutils::Address as _, Address};

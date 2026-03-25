@@ -27,6 +27,7 @@ uuid.workspace = true
 config.workspace = true
 
 futures = "0.3"
+rust_decimal = { version = "1.33", features = ["db-postgres"] }
 
 # Stellar SDK (TBD - need to find correct package)
 # stellar-sdk = "?"

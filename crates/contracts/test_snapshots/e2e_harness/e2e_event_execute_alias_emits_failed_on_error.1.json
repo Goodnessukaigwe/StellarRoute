@@ -1002,7 +1002,7 @@
             "data": {
               "vec": [
                 {
-                  "u32": 31
+                  "u32": 34
                 },
                 {
                   "u32": 0
@@ -1031,7 +1031,7 @@
             ],
             "data": {
               "error": {
-                "contract": 31
+                "contract": 34
               }
             }
           }
@@ -1052,7 +1052,7 @@
               },
               {
                 "error": {
-                  "contract": 31
+                  "contract": 34
                 }
               }
             ],
@@ -1077,7 +1077,7 @@
               },
               {
                 "error": {
-                  "contract": 31
+                  "contract": 34
                 }
               }
             ],
