@@ -19,6 +19,8 @@ import { useQuoteRefresh } from "@/hooks/useQuoteRefresh";
 import { useTransactionHistory } from "@/hooks/useTransactionHistory";
 import { useWallet } from "@/components/providers/wallet-provider";
 import { useSettings } from "@/components/providers/settings-provider";
+
+import type { PathStep, TradingPair } from "@/types";
 import { TransactionStatus } from "@/types/transaction";
 import { toast } from "sonner";
 import type { PathStep, TradingPair, PriceQuote } from "@/types";
@@ -27,8 +29,6 @@ import {
   maxDecimalsForSellAsset,
   parseSellAmount,
 } from "@/lib/amount-input";
-
-import { QUOTE_AUTO_REFRESH_INTERVAL_MS } from "@/lib/quote-stale";
 
 const MOCK_WALLET = "GBSU...XYZ9";
 
@@ -105,6 +105,7 @@ export function DemoSwap() {
     manualRefreshCoolingDown,
     autoRefreshEnabled,
     setAutoRefreshEnabled,
+    isStale,
   } = useQuoteRefresh(quoteBase, quoteCounter, numericForQuote, "sell");
 
   const refreshDisabled = quoteLoading || manualRefreshCoolingDown || !numericForQuote;
@@ -122,6 +123,7 @@ export function DemoSwap() {
     if (!isConnected || stubSpendableBalance == null) return;
     setSellRaw(formatMaxAmountForInput(stubSpendableBalance, sellMaxDecimals));
   }, [isConnected, stubSpendableBalance, sellMaxDecimals]);
+
 
   const handleSwapClick = () => {
     if (parseResult.status !== "ok" || !selectedPair) {
@@ -346,7 +348,14 @@ export function DemoSwap() {
             <span className="text-sm font-medium text-muted-foreground">
               Reference price
             </span>
-            <div className="mt-1 text-sm">{quote?.price ?? "—"}</div>
+            <div className="mt-1 flex items-center gap-2 text-sm">
+              <span>{quote?.price ?? "—"}</span>
+              {isStale && (
+                <span className="inline-flex items-center rounded-md bg-yellow-400/10 px-2 py-1 text-xs font-medium text-yellow-500 ring-1 ring-inset ring-yellow-400/20">
+                  Stale
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-between text-sm">
