@@ -8,12 +8,23 @@ use sqlx::Row;
 use std::sync::Arc;
 use tracing::debug;
 
+use stellarroute_routing::health::filter::GraphFilter;
+use stellarroute_routing::health::policy::{
+    ExclusionPolicy, ExclusionThresholds, OverrideEntry, OverrideRegistry,
+};
+use stellarroute_routing::health::scorer::{
+    AmmScorer, HealthScorer, SdexScorer, VenueScorerInput, VenueType,
+};
+
 use crate::{
     cache,
     error::{ApiError, Result},
     models::{
         request::{AssetPath, QuoteParams},
-        AssetInfo, PathStep, QuoteRationaleMetadata, QuoteResponse, VenueEvaluation,
+        AssetInfo, ExcludedVenueInfo as ApiExcludedVenueInfo,
+        ExclusionDiagnostics as ApiExclusionDiagnostics,
+        ExclusionReason as ApiExclusionReason, PathStep, QuoteRationaleMetadata, QuoteResponse,
+        VenueEvaluation,
     },
     state::AppState,
 };
@@ -102,7 +113,7 @@ pub async fn get_quote(
 
     // For now, implement simple direct path (SDEX only)
     // TODO: Implement multi-hop routing in Phase 2
-    let (price, path, rationale) =
+    let (price, path, rationale, api_diagnostics) =
         find_best_price(&state, &base_asset, &quote_asset, base_id, quote_id, amount).await?;
 
     let total = amount * price;
@@ -126,6 +137,7 @@ pub async fn get_quote(
         source_timestamp: None,
         ttl_seconds,
         rationale: Some(rationale),
+        exclusion_diagnostics: Some(api_diagnostics),
     };
 
     // Cache the response (TTL: 2 seconds for quote data)
@@ -148,7 +160,7 @@ async fn find_best_price(
     base_id: uuid::Uuid,
     quote_id: uuid::Uuid,
     amount: f64,
-) -> Result<(f64, Vec<PathStep>, QuoteRationaleMetadata)> {
+) -> Result<(f64, Vec<PathStep>, QuoteRationaleMetadata, ApiExclusionDiagnostics)> {
     let rows = sqlx::query(
         r#"
                 select
@@ -169,16 +181,118 @@ async fn find_best_price(
 
     let candidates = rows
         .into_iter()
-        .map(|row| DirectVenueCandidate {
-            venue_type: row.get("venue_type"),
-            venue_ref: row.get("venue_ref"),
-            price: row.get::<String, _>("price").parse::<f64>().unwrap_or(0.0),
-            available_amount: row
+        .map(|row| {
+            let venue_type: String = row.get("venue_type");
+            let venue_ref: String = row.get("venue_ref");
+            let price: f64 = row.get::<String, _>("price").parse().unwrap_or(0.0);
+            let available_amount: f64 = row
                 .get::<String, _>("available_amount")
-                .parse::<f64>()
-                .unwrap_or(0.0),
+                .parse()
+                .unwrap_or(0.0);
+            DirectVenueCandidate {
+                venue_type,
+                venue_ref,
+                price,
+                available_amount,
+            }
         })
         .collect::<Vec<_>>();
+
+    // Build VenueScorerInput from candidates
+    let scorer_inputs: Vec<VenueScorerInput> = candidates
+        .iter()
+        .map(|c| {
+            let now = chrono::Utc::now();
+            if c.venue_type == "amm" {
+                VenueScorerInput {
+                    venue_ref: c.venue_ref.clone(),
+                    venue_type: VenueType::Amm,
+                    best_bid_e7: None,
+                    best_ask_e7: None,
+                    depth_top_n_e7: None,
+                    reserve_a_e7: Some((c.available_amount * 1e7) as i128),
+                    reserve_b_e7: Some((c.available_amount * 1e7) as i128),
+                    tvl_e7: Some((c.available_amount * 2e7) as i128),
+                    last_updated_at: now,
+                }
+            } else {
+                VenueScorerInput {
+                    venue_ref: c.venue_ref.clone(),
+                    venue_type: VenueType::Sdex,
+                    best_bid_e7: None,
+                    best_ask_e7: Some((c.price * 1e7) as i128),
+                    depth_top_n_e7: Some((c.available_amount * 1e7) as i128),
+                    reserve_a_e7: None,
+                    reserve_b_e7: None,
+                    tvl_e7: None,
+                    last_updated_at: now,
+                }
+            }
+        })
+        .collect();
+
+    // Build HealthScorer from config
+    let scorer = HealthScorer {
+        sdex: SdexScorer {
+            staleness_threshold_secs: state.health_config.staleness_threshold_secs,
+            max_spread: 0.05,
+            target_depth_e7: 10_000_000_000,
+            depth_levels: state.health_config.depth_levels,
+        },
+        amm: AmmScorer {
+            staleness_threshold_secs: state.health_config.staleness_threshold_secs,
+            min_tvl_threshold_e7: state.health_config.min_tvl_threshold_e7,
+        },
+    };
+
+    let scored = scorer.score_venues(&scorer_inputs);
+
+    // Build ExclusionPolicy from config
+    let override_registry = OverrideRegistry::from_entries(
+        state
+            .health_config
+            .overrides
+            .iter()
+            .map(|e| OverrideEntry {
+                venue_ref: e.venue_ref.clone(),
+                directive: e.directive.clone(),
+            })
+            .collect(),
+    );
+    let policy = ExclusionPolicy {
+        thresholds: ExclusionThresholds {
+            sdex: state.health_config.thresholds.sdex,
+            amm: state.health_config.thresholds.amm,
+        },
+        overrides: override_registry,
+    };
+
+    // Apply filter (pass empty edges — we just need diagnostics for this single-hop path)
+    let filter = GraphFilter::new(&policy);
+    let (_, routing_diagnostics) = filter.filter_edges(&[], &scored);
+
+    // Convert routing diagnostics to API types
+    let api_diagnostics = ApiExclusionDiagnostics {
+        excluded_venues: routing_diagnostics
+            .excluded_venues
+            .iter()
+            .map(|v| ApiExcludedVenueInfo {
+                venue_ref: v.venue_ref.clone(),
+                score: v.score,
+                signals: v.signals.clone(),
+                reason: match &v.reason {
+                    stellarroute_routing::health::policy::ExclusionReason::PolicyThreshold {
+                        threshold,
+                    } => ApiExclusionReason::PolicyThreshold {
+                        threshold: *threshold,
+                    },
+                    stellarroute_routing::health::policy::ExclusionReason::Override => {
+                        ApiExclusionReason::Override
+                    }
+                },
+            })
+            .collect(),
+    };
 
     let (selected, rationale) = evaluate_single_hop_direct_venues(candidates, amount)?;
 
@@ -189,7 +303,7 @@ async fn find_best_price(
         source: selected.path_source(),
     }];
 
-    Ok((selected.price, path, rationale))
+    Ok((selected.price, path, rationale, api_diagnostics))
 }
 
 #[derive(Debug, Clone)]
