@@ -1,19 +1,14 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { ArrowLeftRight, Copy, Search, X } from "lucide-react";
+import { ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { TradingPair } from "@/types";
+import { TokenSearchModal } from "@/components/shared/TokenSearchModal";
+import { useRecentTokens } from "@/hooks/useRecentTokens";
 
 export interface TokenPairSelectorProps {
   /** Available trading pairs from the API */
@@ -205,6 +200,7 @@ export function TokenPairSelector({
 }: TokenPairSelectorProps) {
   const [baseDialogOpen, setBaseDialogOpen] = useState(false);
   const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
+  const { addRecentToken } = useRecentTokens();
 
   const { baseAssets, quoteAssets, validPairs } = useMemo(() => {
     const baseSet = new Map<string, AssetOption>();
@@ -290,10 +286,12 @@ export function TokenPairSelector({
     } else {
       onPairChange(asset, selectedQuote || "");
     }
+    addRecentToken(asset);
   };
 
   const handleQuoteSelect = (asset: string) => {
     onPairChange(selectedBase || "", asset);
+    addRecentToken(asset);
   };
 
   return (
@@ -370,20 +368,22 @@ export function TokenPairSelector({
         )}
       </div>
 
-      <AssetSelectionDialog
+      <TokenSearchModal
         isOpen={baseDialogOpen}
         onClose={() => setBaseDialogOpen(false)}
         assets={baseAssets}
         onSelect={handleBaseSelect}
         title="Select asset to sell"
+        selectedAsset={selectedBase}
       />
 
-      <AssetSelectionDialog
+      <TokenSearchModal
         isOpen={quoteDialogOpen}
         onClose={() => setQuoteDialogOpen(false)}
         assets={availableQuoteAssets}
         onSelect={handleQuoteSelect}
         title="Select asset to buy"
+        selectedAsset={selectedQuote}
       />
     </Card>
   );
