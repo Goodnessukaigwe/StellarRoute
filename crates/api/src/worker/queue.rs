@@ -21,8 +21,9 @@ impl JobQueue {
     /// Returns true if job was enqueued, false if it already exists
     pub async fn enqueue(&self, job: &RouteComputationJob) -> Result<bool> {
         let job_key = job.id.as_hash_key();
-        let payload = serde_json::to_value(&job.payload)
-            .map_err(|e| ApiError::Internal(anyhow::anyhow!("Failed to serialize payload: {}", e)))?;
+        let payload = serde_json::to_value(&job.payload).map_err(|e| {
+            ApiError::Internal(anyhow::anyhow!("Failed to serialize payload: {}", e))
+        })?;
 
         // Try to insert; if it already exists, return false (deduplication)
         let result = sqlx::query(
@@ -71,7 +72,9 @@ impl JobQueue {
         if let Some(r) = row {
             let payload_json: Value = r.get("payload");
             let payload: RouteComputationTaskPayload = serde_json::from_value(payload_json)
-                .map_err(|e| ApiError::Internal(anyhow::anyhow!("Failed to parse payload: {}", e)))?;
+                .map_err(|e| {
+                    ApiError::Internal(anyhow::anyhow!("Failed to parse payload: {}", e))
+                })?;
 
             Ok(Some(RouteComputationJob {
                 id: super::job::JobId::new(
@@ -102,7 +105,9 @@ impl JobQueue {
         .bind(job_key)
         .execute(&self.db)
         .await
-        .map_err(|e| ApiError::Internal(anyhow::anyhow!("Failed to mark job as completed: {}", e)))?;
+        .map_err(|e| {
+            ApiError::Internal(anyhow::anyhow!("Failed to mark job as completed: {}", e))
+        })?;
 
         Ok(())
     }

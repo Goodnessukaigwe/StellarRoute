@@ -109,9 +109,7 @@ pub trait VenueScorer: Send + Sync {
 impl VenueScorer for SdexScorer {
     fn score(&self, input: &VenueScorerInput) -> HealthRecord {
         let now = Utc::now();
-        let staleness_secs = (now - input.last_updated_at)
-            .num_seconds()
-            .max(0) as u64;
+        let staleness_secs = (now - input.last_updated_at).num_seconds().max(0) as u64;
 
         // Stale or missing bids/asks → 0.0
         if staleness_secs > self.staleness_threshold_secs
@@ -135,7 +133,11 @@ impl VenueScorer for SdexScorer {
         let ask = input.best_ask_e7.unwrap() as f64;
         let mid = (bid + ask) / 2.0;
 
-        let spread_ratio = if mid > 0.0 { (ask - bid) / mid } else { f64::INFINITY };
+        let spread_ratio = if mid > 0.0 {
+            (ask - bid) / mid
+        } else {
+            f64::INFINITY
+        };
         let spread_score = (1.0 - spread_ratio / self.max_spread).clamp(0.0, 1.0);
 
         let depth = input.depth_top_n_e7.unwrap_or(0) as f64;
@@ -144,7 +146,8 @@ impl VenueScorer for SdexScorer {
         let staleness_score = 1.0 - (staleness_secs as f64 / self.staleness_threshold_secs as f64);
         let staleness_score = staleness_score.clamp(0.0, 1.0);
 
-        let score = (0.4 * spread_score + 0.4 * depth_score + 0.2 * staleness_score).clamp(0.0, 1.0);
+        let score =
+            (0.4 * spread_score + 0.4 * depth_score + 0.2 * staleness_score).clamp(0.0, 1.0);
 
         HealthRecord {
             venue_ref: input.venue_ref.clone(),
@@ -163,9 +166,7 @@ impl VenueScorer for SdexScorer {
 impl VenueScorer for AmmScorer {
     fn score(&self, input: &VenueScorerInput) -> HealthRecord {
         let now = Utc::now();
-        let staleness_secs = (now - input.last_updated_at)
-            .num_seconds()
-            .max(0) as u64;
+        let staleness_secs = (now - input.last_updated_at).num_seconds().max(0) as u64;
 
         let reserve_a = input.reserve_a_e7.unwrap_or(0);
         let reserve_b = input.reserve_b_e7.unwrap_or(0);
@@ -194,9 +195,10 @@ impl VenueScorer for AmmScorer {
         let staleness_score = 1.0 - (staleness_secs as f64 / self.staleness_threshold_secs as f64);
         let staleness_score = staleness_score.clamp(0.0, 1.0);
 
-        let score = (0.4 * invariant_score + 0.4 * tvl_score + 0.2 * staleness_score).clamp(0.0, 1.0);
+        let score =
+            (0.4 * invariant_score + 0.4 * tvl_score + 0.2 * staleness_score).clamp(0.0, 1.0);
 
-        if score < 0.0 || score > 1.0 {
+        if !(0.0..=1.0).contains(&score) {
             tracing::debug!(score, "AMM score out of bounds, clamping");
         }
 
@@ -335,7 +337,10 @@ mod tests {
             last_updated_at: stale_ts(),
         };
         let record = scorer.score(&input);
-        assert_eq!(record.score, 0.0, "stale timestamp should produce score 0.0");
+        assert_eq!(
+            record.score, 0.0,
+            "stale timestamp should produce score 0.0"
+        );
     }
 
     #[test]
@@ -353,7 +358,10 @@ mod tests {
             last_updated_at: fresh_ts(),
         };
         let record = scorer.score(&input);
-        assert!(record.score > 0.0, "healthy input should produce positive score");
+        assert!(
+            record.score > 0.0,
+            "healthy input should produce positive score"
+        );
         assert!(record.score <= 1.0, "score must not exceed 1.0");
     }
 
@@ -410,7 +418,10 @@ mod tests {
             last_updated_at: stale_ts(),
         };
         let record = scorer.score(&input);
-        assert_eq!(record.score, 0.0, "stale timestamp should produce score 0.0");
+        assert_eq!(
+            record.score, 0.0,
+            "stale timestamp should produce score 0.0"
+        );
     }
 
     #[test]
@@ -431,7 +442,10 @@ mod tests {
         let record = scorer.score(&input);
         // tvl_score = 0.1, invariant_score = 1.0, staleness_score ≈ 1.0
         // score ≈ 0.4*1.0 + 0.4*0.1 + 0.2*1.0 = 0.64
-        assert!(record.score > 0.0, "low TVL should still produce non-zero score");
+        assert!(
+            record.score > 0.0,
+            "low TVL should still produce non-zero score"
+        );
         assert!(record.score < 1.0, "low TVL should reduce score below 1.0");
         // Verify it's less than a full-TVL score
         let full_tvl_input = VenueScorerInput {
@@ -446,7 +460,10 @@ mod tests {
             last_updated_at: fresh_ts(),
         };
         let full_record = scorer.score(&full_tvl_input);
-        assert!(record.score < full_record.score, "low TVL score should be less than full TVL score");
+        assert!(
+            record.score < full_record.score,
+            "low TVL score should be less than full TVL score"
+        );
     }
 
     #[test]
@@ -464,7 +481,10 @@ mod tests {
             last_updated_at: fresh_ts(),
         };
         let record = scorer.score(&input);
-        assert!(record.score > 0.0, "healthy AMM input should produce positive score");
+        assert!(
+            record.score > 0.0,
+            "healthy AMM input should produce positive score"
+        );
         assert!(record.score <= 1.0, "score must not exceed 1.0");
     }
 
@@ -501,6 +521,9 @@ mod tests {
             "unknown_extra_field": "should be ignored"
         }"#;
         let result: Result<HealthRecord, _> = serde_json::from_str(json);
-        assert!(result.is_ok(), "unknown fields should be ignored during deserialization");
+        assert!(
+            result.is_ok(),
+            "unknown fields should be ignored during deserialization"
+        );
     }
 }

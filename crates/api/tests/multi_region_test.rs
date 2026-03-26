@@ -1,10 +1,8 @@
-/// Integration tests for multi-region read replica system
-/// Tests cover routing logic, failover, health checks, and chaos scenarios
+//! Integration tests for multi-region read replica system
+//! Tests cover routing logic, failover, health checks, and chaos scenarios
 
 #[cfg(test)]
 mod multi_region_tests {
-    use std::sync::atomic::{AtomicU32, Ordering};
-    use std::sync::Arc;
     use stellarroute_api::regions::*;
 
     /// Test helper: Create test region config
@@ -128,7 +126,7 @@ mod multi_region_tests {
     #[test]
     fn test_routing_decision_tracking() {
         let configs = vec![test_config(RegionId::UsEast, 0)];
-        let registry = RegionRegistry::with_configs(configs);
+        let _registry = RegionRegistry::with_configs(configs);
 
         let metrics = RoutingMetrics::new();
         assert_eq!(metrics.total_decisions, 0);
@@ -194,7 +192,7 @@ mod multi_region_tests {
             }
         }
 
-        let (healthy, degraded, unhealthy, circuit) = health_mgr.count_by_status();
+        let (healthy, _degraded, _unhealthy, circuit) = health_mgr.count_by_status();
         assert_eq!(circuit, 3); // All circuits open
         assert_eq!(healthy, 0);
 

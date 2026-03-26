@@ -16,7 +16,10 @@ pub struct ExclusionThresholds {
 
 impl Default for ExclusionThresholds {
     fn default() -> Self {
-        Self { sdex: 0.5, amm: 0.5 }
+        Self {
+            sdex: 0.5,
+            amm: 0.5,
+        }
     }
 }
 
@@ -146,8 +149,8 @@ pub enum ExclusionReason {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::Utc;
     use crate::health::scorer::{HealthRecord, ScoredVenue, VenueType};
+    use chrono::Utc;
 
     fn make_scored(venue_ref: &str, venue_type: VenueType, score: f64) -> ScoredVenue {
         ScoredVenue {
@@ -165,7 +168,10 @@ mod tests {
 
     fn default_policy() -> ExclusionPolicy {
         ExclusionPolicy {
-            thresholds: ExclusionThresholds { sdex: 0.5, amm: 0.5 },
+            thresholds: ExclusionThresholds {
+                sdex: 0.5,
+                amm: 0.5,
+            },
             overrides: OverrideRegistry::default(),
         }
     }
@@ -176,7 +182,10 @@ mod tests {
         let policy = default_policy();
         let scored = vec![make_scored("venue:A", VenueType::Sdex, 0.5)];
         let (excluded, _) = policy.apply(&scored);
-        assert!(!excluded.contains("venue:A"), "score == threshold should not be excluded");
+        assert!(
+            !excluded.contains("venue:A"),
+            "score == threshold should not be excluded"
+        );
     }
 
     #[test]
@@ -185,7 +194,10 @@ mod tests {
         let policy = default_policy();
         let scored = vec![make_scored("venue:B", VenueType::Sdex, 0.49)];
         let (excluded, diagnostics) = policy.apply(&scored);
-        assert!(excluded.contains("venue:B"), "score below threshold should be excluded");
+        assert!(
+            excluded.contains("venue:B"),
+            "score below threshold should be excluded"
+        );
         assert_eq!(diagnostics.excluded_venues.len(), 1);
         let info = &diagnostics.excluded_venues[0];
         assert_eq!(info.venue_ref, "venue:B");
@@ -199,7 +211,10 @@ mod tests {
     fn force_include_overrides_low_score() {
         // venue with score 0.0 but force_include should NOT be excluded
         let policy = ExclusionPolicy {
-            thresholds: ExclusionThresholds { sdex: 0.5, amm: 0.5 },
+            thresholds: ExclusionThresholds {
+                sdex: 0.5,
+                amm: 0.5,
+            },
             overrides: OverrideRegistry::from_entries(vec![OverrideEntry {
                 venue_ref: "venue:C".to_string(),
                 directive: OverrideDirective::ForceInclude,
@@ -207,14 +222,20 @@ mod tests {
         };
         let scored = vec![make_scored("venue:C", VenueType::Sdex, 0.0)];
         let (excluded, _) = policy.apply(&scored);
-        assert!(!excluded.contains("venue:C"), "force_include should prevent exclusion even at score 0.0");
+        assert!(
+            !excluded.contains("venue:C"),
+            "force_include should prevent exclusion even at score 0.0"
+        );
     }
 
     #[test]
     fn force_exclude_overrides_high_score() {
         // venue with score 1.0 but force_exclude should be excluded with Override reason
         let policy = ExclusionPolicy {
-            thresholds: ExclusionThresholds { sdex: 0.5, amm: 0.5 },
+            thresholds: ExclusionThresholds {
+                sdex: 0.5,
+                amm: 0.5,
+            },
             overrides: OverrideRegistry::from_entries(vec![OverrideEntry {
                 venue_ref: "venue:D".to_string(),
                 directive: OverrideDirective::ForceExclude,
@@ -222,10 +243,16 @@ mod tests {
         };
         let scored = vec![make_scored("venue:D", VenueType::Sdex, 1.0)];
         let (excluded, diagnostics) = policy.apply(&scored);
-        assert!(excluded.contains("venue:D"), "force_exclude should exclude even at score 1.0");
+        assert!(
+            excluded.contains("venue:D"),
+            "force_exclude should exclude even at score 1.0"
+        );
         assert_eq!(diagnostics.excluded_venues.len(), 1);
         assert!(
-            matches!(diagnostics.excluded_venues[0].reason, ExclusionReason::Override),
+            matches!(
+                diagnostics.excluded_venues[0].reason,
+                ExclusionReason::Override
+            ),
             "reason should be Override"
         );
     }
@@ -234,7 +261,10 @@ mod tests {
     fn unrecognized_override_key_no_error() {
         // override entry for unknown venue_ref should not panic or error
         let policy = ExclusionPolicy {
-            thresholds: ExclusionThresholds { sdex: 0.5, amm: 0.5 },
+            thresholds: ExclusionThresholds {
+                sdex: 0.5,
+                amm: 0.5,
+            },
             overrides: OverrideRegistry::from_entries(vec![OverrideEntry {
                 venue_ref: "venue:UNKNOWN".to_string(),
                 directive: OverrideDirective::ForceExclude,
@@ -244,7 +274,13 @@ mod tests {
         let scored = vec![make_scored("venue:E", VenueType::Sdex, 0.8)];
         // Should not panic; the unrecognized key just triggers a warn log
         let (excluded, _) = policy.apply(&scored);
-        assert!(!excluded.contains("venue:E"), "venue:E should not be excluded");
-        assert!(!excluded.contains("venue:UNKNOWN"), "unknown override key should not cause exclusion of absent venue");
+        assert!(
+            !excluded.contains("venue:E"),
+            "venue:E should not be excluded"
+        );
+        assert!(
+            !excluded.contains("venue:UNKNOWN"),
+            "unknown override key should not cause exclusion of absent venue"
+        );
     }
 }

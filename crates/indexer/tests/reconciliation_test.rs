@@ -5,10 +5,6 @@
 
 #[cfg(test)]
 mod integration_tests {
-    use chrono::{Duration, Utc};
-    use sqlx::postgres::PgPoolOptions;
-    use uuid::Uuid;
-
     // Note: These tests would require a test database setup.
     // They demonstrate the reconciliation engine's capabilities.
 
@@ -268,7 +264,7 @@ mod unit_tests {
     fn test_drift_severity_ordering() {
         assert!(DriftSeverity::Info < DriftSeverity::Warning);
         assert!(DriftSeverity::Warning < DriftSeverity::Critical);
-        assert_eq!(DriftSeverity::Critical > DriftSeverity::Info, true);
+        assert!(DriftSeverity::Critical > DriftSeverity::Info);
     }
 
     #[test]

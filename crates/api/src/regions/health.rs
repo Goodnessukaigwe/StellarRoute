@@ -1,6 +1,6 @@
 use super::config::{RegionConfig, RegionId};
+use std::sync::atomic::{AtomicI64, AtomicU32, Ordering};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU32, AtomicI64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Health status of a regional replica
@@ -96,7 +96,8 @@ impl RegionHealthCheck {
             times.remove(0);
         }
 
-        self.replica_lag_secs.store(replica_lag_secs, Ordering::Relaxed);
+        self.replica_lag_secs
+            .store(replica_lag_secs, Ordering::Relaxed);
     }
 
     /// Record a failed health check
@@ -261,11 +262,7 @@ mod tests {
 
     #[test]
     fn test_consecutive_failures_trigger_circuit() {
-        let config = RegionConfig::new(
-            RegionId::UsEast,
-            "postgres://test".to_string(),
-            0,
-        );
+        let config = RegionConfig::new(RegionId::UsEast, "postgres://test".to_string(), 0);
         let checker = RegionHealthCheck::new(RegionId::UsEast, config);
 
         assert_eq!(checker.current_status(), HealthStatus::Healthy);
@@ -279,11 +276,7 @@ mod tests {
 
     #[test]
     fn test_successful_check_resets_failures() {
-        let config = RegionConfig::new(
-            RegionId::UsEast,
-            "postgres://test".to_string(),
-            0,
-        );
+        let config = RegionConfig::new(RegionId::UsEast, "postgres://test".to_string(), 0);
         let checker = RegionHealthCheck::new(RegionId::UsEast, config);
 
         checker.record_failure();
@@ -296,11 +289,7 @@ mod tests {
 
     #[test]
     fn test_replica_lag_degradation() {
-        let mut config = RegionConfig::new(
-            RegionId::UsEast,
-            "postgres://test".to_string(),
-            0,
-        );
+        let mut config = RegionConfig::new(RegionId::UsEast, "postgres://test".to_string(), 0);
         config.max_replica_lag_secs = 5;
 
         let checker = RegionHealthCheck::new(RegionId::UsEast, config);
@@ -311,11 +300,7 @@ mod tests {
 
     #[test]
     fn test_response_time_averaging() {
-        let config = RegionConfig::new(
-            RegionId::UsEast,
-            "postgres://test".to_string(),
-            0,
-        );
+        let config = RegionConfig::new(RegionId::UsEast, "postgres://test".to_string(), 0);
         let checker = RegionHealthCheck::new(RegionId::UsEast, config);
 
         checker.record_success(100, 1);

@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 use stellarroute_routing::{
-    HybridOptimizer, LiquidityEdge, OptimizerPolicy, PathfinderConfig, PolicyPresets, RouteMetrics,
+    HybridOptimizer, LiquidityEdge, OptimizerPolicy, PathfinderConfig, PolicyPresets,
 };
 
 fn create_test_graph() -> Vec<LiquidityEdge> {
@@ -129,10 +129,12 @@ fn test_deterministic_behavior() {
         .unwrap();
 
     // Results should be identical
+    // Output path is deterministic; score includes `compute_time_us` so it varies per call.
     assert_eq!(result1.metrics.output_amount, result2.metrics.output_amount);
     assert_eq!(result2.metrics.output_amount, result3.metrics.output_amount);
-    assert_eq!(result1.metrics.score, result2.metrics.score);
-    assert_eq!(result2.metrics.score, result3.metrics.score);
+    assert_eq!(result1.metrics.impact_bps, result2.metrics.impact_bps);
+    assert_eq!(result2.metrics.impact_bps, result3.metrics.impact_bps);
+    assert_eq!(result1.metrics.hop_count, result2.metrics.hop_count);
 }
 
 #[test]
@@ -225,8 +227,6 @@ fn test_route_quality_metrics() {
 
     // Validate metrics
     assert!(metrics.output_amount > 0);
-    assert!(metrics.impact_bps >= 0);
-    assert!(metrics.compute_time_us >= 0);
     assert!(metrics.hop_count > 0);
     assert!(metrics.score > 0.0);
     assert!(metrics.score <= 1.0);
@@ -296,15 +296,19 @@ fn test_policy_validation() {
     assert!(valid_policy.validate().is_ok());
 
     // Invalid: weights don't sum to 1.0
-    let mut invalid_policy = OptimizerPolicy::default();
-    invalid_policy.output_weight = 0.8;
-    invalid_policy.impact_weight = 0.5;
-    invalid_policy.latency_weight = 0.1; // Sum = 1.4
+    let invalid_policy = OptimizerPolicy {
+        output_weight: 0.8,
+        impact_weight: 0.5,
+        latency_weight: 0.1, // Sum = 1.4
+        ..Default::default()
+    };
     assert!(invalid_policy.validate().is_err());
 
     // Invalid: negative weight
-    let mut negative_policy = OptimizerPolicy::default();
-    negative_policy.output_weight = -0.1;
+    let negative_policy = OptimizerPolicy {
+        output_weight: -0.1,
+        ..Default::default()
+    };
     assert!(negative_policy.validate().is_err());
 }
 

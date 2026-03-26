@@ -7,15 +7,14 @@ pub mod error;
 pub mod health;
 pub mod impact;
 pub mod normalization;
-pub mod pathfinder;
 pub mod optimizer;
+pub mod pathfinder;
 
 pub use impact::{AmmQuoteCalculator, OrderbookImpactCalculator};
-pub use pathfinder::{LiquidityEdge, Pathfinder, PathfinderConfig, SwapPath};
 pub use optimizer::{
-    HybridOptimizer, OptimizerPolicy, OptimizerDiagnostics, RouteMetrics,
-    PolicyPresets
+    HybridOptimizer, OptimizerDiagnostics, OptimizerPolicy, PolicyPresets, RouteMetrics,
 };
+pub use pathfinder::{LiquidityEdge, Pathfinder, PathfinderConfig, SwapPath};
 
 /// Routing engine with integrated pathfinding and impact calculations
 pub struct RoutingEngine {

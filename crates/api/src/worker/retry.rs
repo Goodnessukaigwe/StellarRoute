@@ -46,7 +46,8 @@ impl RetryStrategy {
             return Duration::ZERO;
         }
 
-        let delay_ms = (self.initial_backoff_ms as f64 * self.backoff_multiplier.powi(attempt as i32 - 1)) as u64;
+        let delay_ms = (self.initial_backoff_ms as f64
+            * self.backoff_multiplier.powi(attempt as i32 - 1)) as u64;
         let capped = delay_ms.min(self.max_backoff_ms);
         Duration::from_millis(capped)
     }

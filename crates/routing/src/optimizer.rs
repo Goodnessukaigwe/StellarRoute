@@ -143,7 +143,10 @@ pub struct OptimizerDiagnostics {
 /// Hybrid route optimizer with configurable policies
 pub struct HybridOptimizer {
     pathfinder: Pathfinder,
+    /// Wired in when hop simulation uses shared calculators (currently placeholder paths use inline fees).
+    #[allow(dead_code)]
     amm_calculator: AmmQuoteCalculator,
+    #[allow(dead_code)]
     orderbook_calculator: OrderbookImpactCalculator,
     policies: HashMap<String, OptimizerPolicy>,
     active_policy: String,
@@ -353,10 +356,12 @@ mod tests {
         let valid_policy = OptimizerPolicy::default();
         assert!(valid_policy.validate().is_ok());
 
-        let mut invalid_policy = OptimizerPolicy::default();
-        invalid_policy.output_weight = 0.8;
-        invalid_policy.impact_weight = 0.8;
-        invalid_policy.latency_weight = 0.2; // Sum = 1.8
+        let invalid_policy = OptimizerPolicy {
+            output_weight: 0.8,
+            impact_weight: 0.8,
+            latency_weight: 0.2, // Sum = 1.8
+            ..Default::default()
+        };
         assert!(invalid_policy.validate().is_err());
     }
 

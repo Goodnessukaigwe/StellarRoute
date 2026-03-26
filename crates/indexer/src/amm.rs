@@ -235,7 +235,7 @@ impl AmmAggregator {
             .bind(reserve.buying_asset_id)
             .bind(reserve.reserve_selling.to_string())
             .bind(reserve.reserve_buying.to_string())
-            .bind(reserve.fee_bps as i32)
+            .bind(reserve.fee_bps)
             .bind(reserve.last_updated_ledger)
             .execute(pool)
             .await?;
@@ -260,11 +260,4 @@ impl AmmAggregator {
 
         Ok(())
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    // TODO: Add tests once proper mocking is set up
 }

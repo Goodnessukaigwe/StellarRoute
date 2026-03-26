@@ -55,11 +55,7 @@ impl IntoResponse for ApiError {
                 "rate_limit_exceeded",
                 "Too many requests. Please try again later.".to_string(),
             ),
-            ApiError::Overloaded(msg) => (
-                StatusCode::SERVICE_UNAVAILABLE,
-                "overloaded",
-                msg,
-            ),
+            ApiError::Overloaded(msg) => (StatusCode::SERVICE_UNAVAILABLE, "overloaded", msg),
             ApiError::Unauthorized(msg) => (StatusCode::UNAUTHORIZED, "unauthorized", msg),
             ApiError::InvalidAsset(msg) => (StatusCode::BAD_REQUEST, "invalid_asset", msg),
             ApiError::NoRouteFound => (

@@ -66,7 +66,8 @@ mod tests {
     #[test]
     fn test_backpressure_soft_reject() {
         let policy = BackpressurePolicy::default();
-        let threshold = (policy.max_queue_depth * policy.rejection_threshold_percent as usize) / 100;
+        let threshold =
+            (policy.max_queue_depth * policy.rejection_threshold_percent as usize) / 100;
         assert!(policy.should_accept(threshold + 100, 0).is_err());
     }
 

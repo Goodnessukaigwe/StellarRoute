@@ -20,7 +20,7 @@ async fn mock_server() -> MockServer {
 }
 
 fn client(server: &MockServer) -> stellarroute_sdk::StellarRouteClient {
-    ClientBuilder::new(&server.uri()).build().unwrap()
+    ClientBuilder::new(server.uri()).build().unwrap()
 }
 
 // ── Health ────────────────────────────────────────────────────────────────────
@@ -377,25 +377,28 @@ fn asset_info_display_name() {
 fn api_error_code_roundtrip() {
     use stellarroute_sdk::ApiErrorCode;
 
-    assert_eq!(ApiErrorCode::from_str("not_found"), ApiErrorCode::NotFound);
     assert_eq!(
-        ApiErrorCode::from_str("rate_limit_exceeded"),
+        "not_found".parse::<ApiErrorCode>().unwrap(),
+        ApiErrorCode::NotFound
+    );
+    assert_eq!(
+        "rate_limit_exceeded".parse::<ApiErrorCode>().unwrap(),
         ApiErrorCode::RateLimitExceeded
     );
     assert_eq!(
-        ApiErrorCode::from_str("validation_error"),
+        "validation_error".parse::<ApiErrorCode>().unwrap(),
         ApiErrorCode::ValidationError
     );
     assert_eq!(
-        ApiErrorCode::from_str("invalid_asset"),
+        "invalid_asset".parse::<ApiErrorCode>().unwrap(),
         ApiErrorCode::InvalidAsset
     );
     assert_eq!(
-        ApiErrorCode::from_str("internal_error"),
+        "internal_error".parse::<ApiErrorCode>().unwrap(),
         ApiErrorCode::InternalError
     );
 
-    let other = ApiErrorCode::from_str("custom_code");
+    let other = "custom_code".parse::<ApiErrorCode>().unwrap();
     assert_eq!(other.as_str(), "custom_code");
 }
 

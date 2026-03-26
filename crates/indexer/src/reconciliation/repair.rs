@@ -72,7 +72,7 @@ impl RepairAction {
         .bind(self.executed_at)
         .execute(db)
         .await
-        .map_err(|e| IndexerError::DatabaseQuery(e))?;
+        .map_err(IndexerError::DatabaseQuery)?;
 
         Ok(())
     }

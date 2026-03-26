@@ -27,19 +27,23 @@ pub enum ApiErrorCode {
     Other(String),
 }
 
-impl ApiErrorCode {
+impl std::str::FromStr for ApiErrorCode {
+    type Err = std::convert::Infallible;
+
     /// Parse the `error` string from an API error response.
-    pub fn from_str(s: &str) -> Self {
-        match s {
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        Ok(match s {
             "invalid_asset" => Self::InvalidAsset,
             "validation_error" => Self::ValidationError,
             "not_found" => Self::NotFound,
             "rate_limit_exceeded" => Self::RateLimitExceeded,
             "internal_error" => Self::InternalError,
             other => Self::Other(other.to_string()),
-        }
+        })
     }
+}
 
+impl ApiErrorCode {
     /// Returns the canonical string representation used by the API.
     pub fn as_str(&self) -> &str {
         match self {

@@ -51,7 +51,6 @@
 ///
 /// Each region has a circuit breaker that opens after N consecutive failures.
 /// Open circuits won't accept requests for a configured timeout period.
-
 pub mod config;
 pub mod consistency;
 pub mod health;

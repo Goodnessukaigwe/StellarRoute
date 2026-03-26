@@ -23,18 +23,33 @@ impl RegionId {
         }
     }
 
-    pub fn from_str(s: &str) -> Option<Self> {
-        match s {
-            "us-east" => Some(RegionId::UsEast),
-            "eu-west" => Some(RegionId::EuWest),
-            "ap-southeast" => Some(RegionId::ApSoutheast),
-            _ => None,
-        }
-    }
-
     /// All regions in priority order (primary → fallback)
     pub fn all_ordered() -> Vec<RegionId> {
         vec![RegionId::UsEast, RegionId::EuWest, RegionId::ApSoutheast]
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ParseRegionIdError;
+
+impl std::fmt::Display for ParseRegionIdError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("unknown region id")
+    }
+}
+
+impl std::error::Error for ParseRegionIdError {}
+
+impl std::str::FromStr for RegionId {
+    type Err = ParseRegionIdError;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "us-east" => Ok(RegionId::UsEast),
+            "eu-west" => Ok(RegionId::EuWest),
+            "ap-southeast" => Ok(RegionId::ApSoutheast),
+            _ => Err(ParseRegionIdError),
+        }
     }
 }
 
@@ -112,8 +127,8 @@ impl RegionRegistry {
         let mut configs = HashMap::new();
 
         // Primary region (mandatory)
-        let primary_url = std::env::var("DATABASE_URL")
-            .map_err(|_| "DATABASE_URL not set".to_string())?;
+        let primary_url =
+            std::env::var("DATABASE_URL").map_err(|_| "DATABASE_URL not set".to_string())?;
         configs.insert(
             RegionId::UsEast,
             RegionConfig::new(RegionId::UsEast, primary_url, 0),
@@ -218,17 +233,13 @@ mod tests {
     #[test]
     fn test_region_id_string_conversion() {
         assert_eq!(RegionId::UsEast.as_str(), "us-east");
-        assert_eq!(RegionId::from_str("us-east"), Some(RegionId::UsEast));
-        assert_eq!(RegionId::from_str("invalid"), None);
+        assert_eq!("us-east".parse::<RegionId>().unwrap(), RegionId::UsEast);
+        assert!("invalid".parse::<RegionId>().is_err());
     }
 
     #[test]
     fn test_region_config_defaults() {
-        let config = RegionConfig::new(
-            RegionId::EuWest,
-            "postgres://eu".to_string(),
-            1,
-        );
+        let config = RegionConfig::new(RegionId::EuWest, "postgres://eu".to_string(), 1);
         assert_eq!(config.max_replica_lag_secs, 5);
         assert_eq!(config.max_staleness_secs, 10);
         assert!(config.enabled);

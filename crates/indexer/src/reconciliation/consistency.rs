@@ -91,7 +91,7 @@ impl ConsistencyCheckResult {
         .bind(self.timestamp)
         .execute(db)
         .await
-        .map_err(|e| IndexerError::DatabaseQuery(e))?;
+        .map_err(IndexerError::DatabaseQuery)?;
 
         Ok(id)
     }
@@ -123,7 +123,7 @@ impl CheckThresholds {
         )
         .fetch_all(db)
         .await
-        .map_err(|e| IndexerError::DatabaseQuery(e))?;
+        .map_err(IndexerError::DatabaseQuery)?;
 
         let mut thresholds = CheckThresholds {
             staleness_threshold_secs: 300,

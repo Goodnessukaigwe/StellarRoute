@@ -83,12 +83,8 @@ impl RouteWorkerPool {
             .should_accept(stats.pending, stats.processing)?;
 
         // Create job with retry policy
-        let job = RouteComputationJob::new(
-            base,
-            quote,
-            payload,
-            self.config.retry_strategy.max_retries,
-        );
+        let job =
+            RouteComputationJob::new(base, quote, payload, self.config.retry_strategy.max_retries);
 
         // Check if job already being processed (deduplication)
         if !self.dedup.try_add(&job.id).await {
@@ -173,7 +169,7 @@ impl RouteWorkerPool {
             .queue
             .stats()
             .await
-            .unwrap_or_else(|_| super::queue::QueueStats {
+            .unwrap_or(super::queue::QueueStats {
                 pending: 0,
                 processing: 0,
                 completed: 0,
@@ -198,9 +194,7 @@ impl RouteWorkerPool {
 
     /// Perform periodic cleanup
     pub async fn cleanup(&self) -> Result<()> {
-        self.dedup
-            .cleanup_expired(self.config.dedup_ttl_secs)
-            .await;
+        self.dedup.cleanup_expired(self.config.dedup_ttl_secs).await;
         Ok(())
     }
 }
@@ -217,13 +211,4 @@ pub struct PoolMetricsSnapshot {
     pub queue_depth: usize,
     pub dedup_cache_size: usize,
     pub load_score: u32,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use sqlx::PgPool;
-
-    // Note: These tests would require a test database
-    // They're provided as examples for integration testing
 }

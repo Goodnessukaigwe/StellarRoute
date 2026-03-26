@@ -43,6 +43,12 @@ pub struct RoutingMetrics {
     pub circuit_breaker_blocks: u64,
 }
 
+impl Default for RoutingMetrics {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RoutingMetrics {
     pub fn new() -> Self {
         RoutingMetrics {

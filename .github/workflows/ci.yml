@@ -48,9 +48,9 @@ jobs:
       - name: Check formatting
         run: cargo fmt -- --check
       
-      - name: Run clippy (contracts)
-        run:  
-      
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
       - name: Run cargo audit
         run: cargo audit
 

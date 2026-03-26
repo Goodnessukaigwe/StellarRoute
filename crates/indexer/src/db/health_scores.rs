@@ -29,7 +29,6 @@ impl HealthScoreWriter {
     /// DB errors are logged at `warn` level and swallowed — they must never
     /// propagate to the routing path.
     pub async fn write(&self, record: &HealthScoreRecord) -> Result<(), ()> {
-        let score_decimal = record.score as f64;
         let result = sqlx::query(
             r#"
             insert into venue_health_scores (venue_ref, venue_type, score, signals, computed_at)
@@ -38,7 +37,7 @@ impl HealthScoreWriter {
         )
         .bind(&record.venue_ref)
         .bind(&record.venue_type)
-        .bind(score_decimal)
+        .bind(record.score)
         .bind(&record.signals)
         .bind(record.computed_at)
         .execute(&self.pool)

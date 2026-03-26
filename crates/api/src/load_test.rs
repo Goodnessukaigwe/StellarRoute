@@ -50,17 +50,44 @@ impl LoadTestResults {
         println!("\n╔══════════════════════════════════════════════════════════╗");
         println!("║                 Load Test Results                        ║");
         println!("╠══════════════════════════════════════════════════════════╣");
-        println!("║ Total Requests:        {:>10}                    ║", self.total_requests);
-        println!("║ Successful:            {:>10}                    ║", self.successful_requests);
-        println!("║ Failed:                {:>10}                    ║", self.failed_requests);
-        println!("║ Rejected (Backpressure): {:>9}                    ║", self.rejected_requests);
+        println!(
+            "║ Total Requests:        {:>10}                    ║",
+            self.total_requests
+        );
+        println!(
+            "║ Successful:            {:>10}                    ║",
+            self.successful_requests
+        );
+        println!(
+            "║ Failed:                {:>10}                    ║",
+            self.failed_requests
+        );
+        println!(
+            "║ Rejected (Backpressure): {:>9}                    ║",
+            self.rejected_requests
+        );
         println!("╠══════════════════════════════════════════════════════════╣");
-        println!("║ Duration:              {:>10} seconds            ║", self.total_duration_secs as i32);
-        println!("║ Throughput:            {:>10} req/sec             ║", self.throughput_rps as i32);
+        println!(
+            "║ Duration:              {:>10} seconds            ║",
+            self.total_duration_secs as i32
+        );
+        println!(
+            "║ Throughput:            {:>10} req/sec             ║",
+            self.throughput_rps as i32
+        );
         println!("╠══════════════════════════════════════════════════════════╣");
-        println!("║ Avg Latency:           {:>10} ms                ║", self.avg_latency_ms as i32);
-        println!("║ P95 Latency:           {:>10} ms                ║", self.p95_latency_ms as i32);
-        println!("║ P99 Latency:           {:>10} ms                ║", self.p99_latency_ms as i32);
+        println!(
+            "║ Avg Latency:           {:>10} ms                ║",
+            self.avg_latency_ms as i32
+        );
+        println!(
+            "║ P95 Latency:           {:>10} ms                ║",
+            self.p95_latency_ms as i32
+        );
+        println!(
+            "║ P99 Latency:           {:>10} ms                ║",
+            self.p99_latency_ms as i32
+        );
         println!("╚══════════════════════════════════════════════════════════╝\n");
     }
 }

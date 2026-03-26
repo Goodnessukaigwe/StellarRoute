@@ -30,10 +30,10 @@ impl<'a> GraphFilter<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::Utc;
     use crate::health::policy::{ExclusionPolicy, ExclusionThresholds, OverrideRegistry};
     use crate::health::scorer::{HealthRecord, ScoredVenue, VenueType};
     use crate::pathfinder::LiquidityEdge;
+    use chrono::Utc;
 
     fn make_scored(venue_ref: &str, venue_type: VenueType, score: f64) -> ScoredVenue {
         ScoredVenue {
@@ -61,7 +61,10 @@ mod tests {
 
     fn policy_with_threshold(threshold: f64) -> ExclusionPolicy {
         ExclusionPolicy {
-            thresholds: ExclusionThresholds { sdex: threshold, amm: threshold },
+            thresholds: ExclusionThresholds {
+                sdex: threshold,
+                amm: threshold,
+            },
             overrides: OverrideRegistry::default(),
         }
     }
@@ -79,7 +82,10 @@ mod tests {
         let edges = vec![make_edge("venue:A"), make_edge("venue:B")];
 
         let (filtered, diagnostics) = filter.filter_edges(&edges, &scored);
-        assert!(filtered.is_empty(), "all edges should be excluded when all venues are below threshold");
+        assert!(
+            filtered.is_empty(),
+            "all edges should be excluded when all venues are below threshold"
+        );
         assert_eq!(diagnostics.excluded_venues.len(), 2);
     }
 
@@ -96,7 +102,11 @@ mod tests {
         let edges = vec![make_edge("venue:A"), make_edge("venue:B")];
 
         let (filtered, diagnostics) = filter.filter_edges(&edges, &scored);
-        assert_eq!(filtered.len(), 2, "no edges should be excluded when all venues are above threshold");
+        assert_eq!(
+            filtered.len(),
+            2,
+            "no edges should be excluded when all venues are above threshold"
+        );
         assert!(diagnostics.excluded_venues.is_empty());
     }
 
@@ -113,7 +123,11 @@ mod tests {
         let edges = vec![make_edge("venue:good"), make_edge("venue:bad")];
 
         let (filtered, diagnostics) = filter.filter_edges(&edges, &scored);
-        assert_eq!(filtered.len(), 1, "only the healthy venue edge should remain");
+        assert_eq!(
+            filtered.len(),
+            1,
+            "only the healthy venue edge should remain"
+        );
         assert_eq!(filtered[0].venue_ref, "venue:good");
         assert_eq!(diagnostics.excluded_venues.len(), 1);
         assert_eq!(diagnostics.excluded_venues[0].venue_ref, "venue:bad");

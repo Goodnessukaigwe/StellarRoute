@@ -195,7 +195,10 @@ impl StellarRouteClient {
 
         if !status.is_success() {
             let (code, message) = match serde_json::from_str::<ErrorResponse>(&body) {
-                Ok(err) => (ApiErrorCode::from_str(&err.error), err.message),
+                Ok(err) => (
+                    err.error.parse::<ApiErrorCode>().expect("infallible parse"),
+                    err.message,
+                ),
                 Err(_) => (
                     ApiErrorCode::InternalError,
                     format!("API request failed with status {status}"),

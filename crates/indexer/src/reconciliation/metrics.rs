@@ -195,7 +195,7 @@ impl DriftMetrics {
         .bind(self.recorded_at)
         .execute(db)
         .await
-        .map_err(|e| IndexerError::DatabaseQuery(e))?;
+        .map_err(IndexerError::DatabaseQuery)?;
 
         Ok(id)
     }

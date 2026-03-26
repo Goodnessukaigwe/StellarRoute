@@ -1,5 +1,6 @@
 //! Job deduplication to prevent duplicate route computations
 
+use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -14,7 +15,6 @@ pub struct DeduplicationCache {
 
 #[derive(Clone, Debug)]
 struct DeduplicationEntry {
-    job_id: JobId,
     created_at: std::time::Instant,
 }
 
@@ -31,17 +31,14 @@ impl DeduplicationCache {
         let key = job_id.as_hash_key();
         let mut cache = self.cache.write().await;
 
-        if cache.contains_key(&key) {
-            false // Duplicate
-        } else {
-            cache.insert(
-                key,
-                DeduplicationEntry {
-                    job_id: job_id.clone(),
+        match cache.entry(key) {
+            Entry::Vacant(e) => {
+                e.insert(DeduplicationEntry {
                     created_at: std::time::Instant::now(),
-                },
-            );
-            true // Added successfully
+                });
+                true
+            }
+            Entry::Occupied(_) => false,
         }
     }
 

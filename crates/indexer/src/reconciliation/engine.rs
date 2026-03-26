@@ -67,7 +67,7 @@ impl ReconciliationEngine {
         }
 
         let completed_at = Utc::now();
-        let duration_ms = (completed_at - started_at).num_milliseconds() as i64;
+        let duration_ms = (completed_at - started_at).num_milliseconds();
 
         // Create and return reconciliation run summary
         let run = ReconciliationRun {
@@ -179,7 +179,7 @@ impl ReconciliationRun {
         .bind(self.duration_ms)
         .execute(db)
         .await
-        .map_err(|e| crate::error::IndexerError::DatabaseQuery(e))?;
+        .map_err(crate::error::IndexerError::DatabaseQuery)?;
 
         Ok(())
     }

@@ -9,11 +9,9 @@ use std::sync::Arc;
 use tracing::debug;
 
 use stellarroute_routing::health::filter::GraphFilter;
-use stellarroute_routing::health::policy::{
-    ExclusionPolicy, ExclusionThresholds, OverrideEntry, OverrideRegistry,
-};
+use stellarroute_routing::health::policy::{ExclusionPolicy, OverrideRegistry};
 use stellarroute_routing::health::scorer::{
-    AmmScorer, HealthScorer, SdexScorer, VenueScorerInput, VenueType,
+    AmmScorer, HealthScorer, HealthScoringConfig, SdexScorer, VenueScorerInput, VenueType,
 };
 
 use crate::{
@@ -22,9 +20,8 @@ use crate::{
     models::{
         request::{AssetPath, QuoteParams},
         AssetInfo, ExcludedVenueInfo as ApiExcludedVenueInfo,
-        ExclusionDiagnostics as ApiExclusionDiagnostics,
-        ExclusionReason as ApiExclusionReason, PathStep, QuoteRationaleMetadata, QuoteResponse,
-        VenueEvaluation,
+        ExclusionDiagnostics as ApiExclusionDiagnostics, ExclusionReason as ApiExclusionReason,
+        PathStep, QuoteRationaleMetadata, QuoteResponse, VenueEvaluation,
     },
     state::AppState,
 };
@@ -160,7 +157,12 @@ async fn find_best_price(
     base_id: uuid::Uuid,
     quote_id: uuid::Uuid,
     amount: f64,
-) -> Result<(f64, Vec<PathStep>, QuoteRationaleMetadata, ApiExclusionDiagnostics)> {
+) -> Result<(
+    f64,
+    Vec<PathStep>,
+    QuoteRationaleMetadata,
+    ApiExclusionDiagnostics,
+)> {
     let rows = sqlx::query(
         r#"
                 select
@@ -231,40 +233,27 @@ async fn find_best_price(
         })
         .collect();
 
-    // Build HealthScorer from config
+    // Health scoring / exclusion policy (defaults match routing `HealthScoringConfig`)
+    let health_config = HealthScoringConfig::default();
+
     let scorer = HealthScorer {
         sdex: SdexScorer {
-            staleness_threshold_secs: state.health_config.staleness_threshold_secs,
+            staleness_threshold_secs: health_config.staleness_threshold_secs,
             max_spread: 0.05,
             target_depth_e7: 10_000_000_000,
-            depth_levels: state.health_config.depth_levels,
+            depth_levels: health_config.depth_levels,
         },
         amm: AmmScorer {
-            staleness_threshold_secs: state.health_config.staleness_threshold_secs,
-            min_tvl_threshold_e7: state.health_config.min_tvl_threshold_e7,
+            staleness_threshold_secs: health_config.staleness_threshold_secs,
+            min_tvl_threshold_e7: health_config.min_tvl_threshold_e7,
         },
     };
 
     let scored = scorer.score_venues(&scorer_inputs);
 
-    // Build ExclusionPolicy from config
-    let override_registry = OverrideRegistry::from_entries(
-        state
-            .health_config
-            .overrides
-            .iter()
-            .map(|e| OverrideEntry {
-                venue_ref: e.venue_ref.clone(),
-                directive: e.directive.clone(),
-            })
-            .collect(),
-    );
     let policy = ExclusionPolicy {
-        thresholds: ExclusionThresholds {
-            sdex: state.health_config.thresholds.sdex,
-            amm: state.health_config.thresholds.amm,
-        },
-        overrides: override_registry,
+        thresholds: health_config.thresholds.clone(),
+        overrides: OverrideRegistry::from_entries(health_config.overrides.clone()),
     };
 
     // Apply filter (pass empty edges — we just need diagnostics for this single-hop path)

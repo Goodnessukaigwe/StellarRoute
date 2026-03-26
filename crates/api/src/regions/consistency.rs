@@ -129,7 +129,11 @@ impl ConsistencyConstraint {
     }
 
     /// Check if version satisfies both staleness and version-match requirements
-    pub fn satisfies_with_baseline(&self, version: &DataVersion, baseline_ledger: Option<u32>) -> bool {
+    pub fn satisfies_with_baseline(
+        &self,
+        version: &DataVersion,
+        baseline_ledger: Option<u32>,
+    ) -> bool {
         if !self.satisfies(version) {
             return false;
         }
@@ -137,11 +141,7 @@ impl ConsistencyConstraint {
         if self.require_version_match {
             if let Some(skew) = self.max_ledger_skew {
                 if let Some(base) = baseline_ledger {
-                    let diff = if version.ledger_sequence > base {
-                        version.ledger_sequence - base
-                    } else {
-                        base - version.ledger_sequence
-                    };
+                    let diff = version.ledger_sequence.abs_diff(base);
                     return diff <= skew;
                 }
 
