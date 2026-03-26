@@ -170,7 +170,10 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err(),
-            format!("slippage_bps must be between 0 and {} (100%)", MAX_SLIPPAGE_BPS)
+            format!(
+                "slippage_bps must be between 0 and {} (100%)",
+                MAX_SLIPPAGE_BPS
+            )
         );
     }
 }

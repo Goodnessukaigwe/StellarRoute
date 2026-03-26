@@ -136,9 +136,7 @@ async fn get_quote_inner(
     }
 
     // Validate slippage bounds
-    params
-        .validate_slippage()
-        .map_err(ApiError::Validation)?;
+    params.validate_slippage().map_err(ApiError::Validation)?;
 
     let slippage_bps = params.slippage_bps();
     let quote_type = match params.quote_type {
@@ -282,9 +280,7 @@ pub async fn get_route(
     }
 
     // Validate slippage bounds
-    params
-        .validate_slippage()
-        .map_err(ApiError::Validation)?;
+    params.validate_slippage().map_err(ApiError::Validation)?;
 
     let slippage_bps = params.slippage_bps();
 
@@ -292,7 +288,8 @@ pub async fn get_route(
     let quote_id = find_asset_id(&state, &quote_asset).await?;
 
     // For route endpoint, we reuse the same logic but return a simplified response
-    let (_, path, _) = find_best_price(&state, &base_asset, &quote_asset, base_id, quote_id, amount).await?;
+    let (_, path, _, _, _, _) =
+        find_best_price(&state, &base_asset, &quote_asset, base_id, quote_id, amount).await?;
 
     let response = crate::models::RouteResponse {
         base_asset: asset_path_to_info(&base_asset),

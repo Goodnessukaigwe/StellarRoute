@@ -170,6 +170,18 @@ pub struct QuoteResponse {
     pub data_freshness: Option<DataFreshness>,
 }
 
+/// Trading route response (path only, no pricing)
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct RouteResponse {
+    pub base_asset: AssetInfo,
+    pub quote_asset: AssetInfo,
+    pub amount: String,
+    pub path: Vec<PathStep>,
+    pub slippage_bps: u32,
+    /// Unix timestamp (ms) when this route was generated
+    pub timestamp: i64,
+}
+
 /// Configuration for quote staleness detection
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct QuoteStalenessConfig {
