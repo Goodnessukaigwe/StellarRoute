@@ -31,7 +31,7 @@ async fn test_quote_request_coalescing_under_load() {
     for _ in 0..num_requests {
         // Clone router for each request
         let router_clone = router.clone();
-        
+
         tasks.push(tokio::spawn(async move {
             let request = Request::builder()
                 .uri("/api/v1/quote/native/USDC?amount=10")
@@ -40,7 +40,7 @@ async fn test_quote_request_coalescing_under_load() {
 
             let response = router_clone.oneshot(request).await.expect("Request failed");
             assert_eq!(response.status(), StatusCode::OK);
-            
+
             let body = axum::body::to_bytes(response.into_body(), usize::MAX)
                 .await
                 .unwrap();
@@ -67,18 +67,25 @@ async fn test_quote_request_coalescing_under_load() {
         .body(Body::empty())
         .unwrap();
 
-    let metrics_resp = router.oneshot(metrics_req).await.expect("Metrics request failed");
+    let metrics_resp = router
+        .oneshot(metrics_req)
+        .await
+        .expect("Metrics request failed");
     assert_eq!(metrics_resp.status(), StatusCode::OK);
-    
+
     let metrics_body = axum::body::to_bytes(metrics_resp.into_body(), usize::MAX)
         .await
         .unwrap();
     let metrics_json: Value = serde_json::from_slice(&metrics_body).unwrap();
-    
+
     let quote_misses = metrics_json["quote_misses"].as_u64().unwrap_or(0);
-    
+
     // It should just compute once (miss = 1) even if asset not found, as compute_res returns error but closure finishes.
     // Wait, if it's NoRouteFound, does the closure return Arc<Result>?
     // Yes: match compute_res { Ok(res) => res, Err(e) => return Arc::new(Err(e)) };
-    assert!(quote_misses <= 1, "Expected at most 1 cache miss due to coalescing, got {}", quote_misses);
+    assert!(
+        quote_misses <= 1,
+        "Expected at most 1 cache miss due to coalescing, got {}",
+        quote_misses
+    );
 }

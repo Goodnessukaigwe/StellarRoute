@@ -160,7 +160,14 @@ async fn get_quote_inner(
 
     // Try to get from cache first
     let amount_str = format!("{:.7}", amount);
-    let quote_cache_key = cache::keys::quote(&base, &quote, &amount_str, slippage_bps, quote_type, explain);
+    let quote_cache_key = cache::keys::quote(
+        &base,
+        &quote,
+        &amount_str,
+        slippage_bps,
+        quote_type,
+        explain,
+    );
 
     let state_c = state.clone();
     let base_c = base.clone();
@@ -168,94 +175,96 @@ async fn get_quote_inner(
     let quote_cache_key_c = quote_cache_key.clone();
 
     // Use single-flight to coalesce identical concurrent requests
-    let result_arc: Arc<crate::error::Result<QuoteResponse>> = state.quote_single_flight.execute(&quote_cache_key, || async move {
-        let state = state_c;
-        let base = base_c;
-        let quote = quote_c;
-        let quote_cache_key = quote_cache_key_c;
+    let result_arc: Arc<crate::error::Result<QuoteResponse>> = state
+        .quote_single_flight
+        .execute(&quote_cache_key, || async move {
+            let state = state_c;
+            let base = base_c;
+            let quote = quote_c;
+            let quote_cache_key = quote_cache_key_c;
 
-        // Try to get from cache first (inside single-flight so we only compute once if miss)
-        if let Some(cache) = &state.cache {
-            if let Ok(mut cache) = cache.try_lock() {
-                if let Some(cached) = cache.get::<QuoteResponse>(&quote_cache_key).await {
-                    state.cache_metrics.inc_quote_hit();
-                    tracing::Span::current().record("cache_hit", true);
-                    debug!("Returning cached quote for {}/{}", base, quote);
-                    // SingleFlight expects Arc<Result<QuoteResponse>>
-                    return Arc::new(Ok(cached));
+            // Try to get from cache first (inside single-flight so we only compute once if miss)
+            if let Some(cache) = &state.cache {
+                if let Ok(mut cache) = cache.try_lock() {
+                    if let Some(cached) = cache.get::<QuoteResponse>(&quote_cache_key).await {
+                        state.cache_metrics.inc_quote_hit();
+                        tracing::Span::current().record("cache_hit", true);
+                        debug!("Returning cached quote for {}/{}", base, quote);
+                        // SingleFlight expects Arc<Result<QuoteResponse>>
+                        return Arc::new(Ok(cached));
+                    }
                 }
             }
-        }
 
-        // For now, implement simple direct path (SDEX only)
-        // TODO: Implement multi-hop routing in Phase 2
-        let compute_res =
-            find_best_price(&state, &base_asset, &quote_asset, base_id, quote_id, amount).await;
+            // For now, implement simple direct path (SDEX only)
+            // TODO: Implement multi-hop routing in Phase 2
+            let compute_res =
+                find_best_price(&state, &base_asset, &quote_asset, base_id, quote_id, amount).await;
 
-        let (price, path, rationale, api_diagnostics, freshness_outcome, fresh_timestamps) =
-            match compute_res {
-                Ok(res) => res,
-                Err(e) => return Arc::new(Err(e)),
+            let (price, path, rationale, api_diagnostics, freshness_outcome, fresh_timestamps) =
+                match compute_res {
+                    Ok(res) => res,
+                    Err(e) => return Arc::new(Err(e)),
+                };
+
+            // Req 4.2: increment stale_inputs_excluded counter when stale inputs were excluded
+            let stale_count = freshness_outcome.stale.len();
+            if stale_count > 0 {
+                state
+                    .cache_metrics
+                    .add_stale_inputs_excluded(stale_count as u64);
+            }
+
+            let total = amount * price;
+            // Keep timestamps in milliseconds to match API docs and frontend staleness logic.
+            let timestamp = chrono::Utc::now().timestamp_millis();
+            let ttl_seconds = u32::try_from(state.cache_policy.quote_ttl.as_secs()).ok();
+            let expires_at = i64::try_from(state.cache_policy.quote_ttl.as_millis())
+                .ok()
+                .map(|ttl_ms| timestamp + ttl_ms);
+
+            // Req 3.1: source_timestamp = oldest last_updated_at among fresh candidates (Unix ms)
+            let source_timestamp = fresh_timestamps
+                .iter()
+                .min()
+                .map(|ts| ts.timestamp_millis());
+
+            // Req 3.2, 3.3: data_freshness populated from FreshnessOutcome
+            let data_freshness = Some(crate::models::DataFreshness {
+                fresh_count: freshness_outcome.fresh.len(),
+                stale_count: freshness_outcome.stale.len(),
+                max_staleness_secs: freshness_outcome.max_staleness_secs,
+            });
+
+            let response = QuoteResponse {
+                base_asset: asset_path_to_info(&base_asset),
+                quote_asset: asset_path_to_info(&quote_asset),
+                amount: format!("{:.7}", amount),
+                price: format!("{:.7}", price),
+                total: format!("{:.7}", total),
+                quote_type: quote_type.to_string(),
+                path,
+                timestamp,
+                expires_at,
+                source_timestamp,
+                ttl_seconds,
+                rationale: Some(rationale),
+                exclusion_diagnostics: Some(api_diagnostics),
+                data_freshness,
             };
 
-        // Req 4.2: increment stale_inputs_excluded counter when stale inputs were excluded
-        let stale_count = freshness_outcome.stale.len();
-        if stale_count > 0 {
-            state
-                .cache_metrics
-                .add_stale_inputs_excluded(stale_count as u64);
-        }
-
-        let total = amount * price;
-        // Keep timestamps in milliseconds to match API docs and frontend staleness logic.
-        let timestamp = chrono::Utc::now().timestamp_millis();
-        let ttl_seconds = u32::try_from(state.cache_policy.quote_ttl.as_secs()).ok();
-        let expires_at = i64::try_from(state.cache_policy.quote_ttl.as_millis())
-            .ok()
-            .map(|ttl_ms| timestamp + ttl_ms);
-
-        // Req 3.1: source_timestamp = oldest last_updated_at among fresh candidates (Unix ms)
-        let source_timestamp = fresh_timestamps
-            .iter()
-            .min()
-            .map(|ts| ts.timestamp_millis());
-
-        // Req 3.2, 3.3: data_freshness populated from FreshnessOutcome
-        let data_freshness = Some(crate::models::DataFreshness {
-            fresh_count: freshness_outcome.fresh.len(),
-            stale_count: freshness_outcome.stale.len(),
-            max_staleness_secs: freshness_outcome.max_staleness_secs,
-        });
-
-        let response = QuoteResponse {
-            base_asset: asset_path_to_info(&base_asset),
-            quote_asset: asset_path_to_info(&quote_asset),
-            amount: format!("{:.7}", amount),
-            price: format!("{:.7}", price),
-            total: format!("{:.7}", total),
-            quote_type: quote_type.to_string(),
-            path,
-            timestamp,
-            expires_at,
-            source_timestamp,
-            ttl_seconds,
-            rationale: Some(rationale),
-            exclusion_diagnostics: Some(api_diagnostics),
-            data_freshness,
-        };
-
-        // Cache the response (TTL: 2 seconds for quote data)
-        if let Some(cache) = &state.cache {
-            if let Ok(mut cache) = cache.try_lock() {
-                let _ = cache
-                    .set(&quote_cache_key, &response, state.cache_policy.quote_ttl)
-                    .await;
+            // Cache the response (TTL: 2 seconds for quote data)
+            if let Some(cache) = &state.cache {
+                if let Ok(mut cache) = cache.try_lock() {
+                    let _ = cache
+                        .set(&quote_cache_key, &response, state.cache_policy.quote_ttl)
+                        .await;
+                }
             }
-        }
 
-        Arc::new(Ok(response))
-    })
-    .await;
+            Arc::new(Ok(response))
+        })
+        .await;
 
     match Arc::try_unwrap(result_arc) {
         Ok(res) => res.map(Json),

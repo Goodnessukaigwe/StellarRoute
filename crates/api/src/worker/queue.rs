@@ -23,7 +23,10 @@ impl JobQueue {
     pub async fn enqueue(&self, job: &RouteComputationJob) -> Result<bool> {
         let job_key = job.id.as_hash_key();
         let payload = serde_json::to_value(&job.payload).map_err(|e| {
-            ApiError::Internal(Arc::new(anyhow::anyhow!("Failed to serialize payload: {}", e)))
+            ApiError::Internal(Arc::new(anyhow::anyhow!(
+                "Failed to serialize payload: {}",
+                e
+            )))
         })?;
 
         // Try to insert; if it already exists, return false (deduplication)
@@ -45,7 +48,9 @@ impl JobQueue {
         .bind(Utc::now())
         .execute(&self.db)
         .await
-        .map_err(|e| ApiError::Internal(Arc::new(anyhow::anyhow!("Failed to enqueue job: {}", e))))?;
+        .map_err(|e| {
+            ApiError::Internal(Arc::new(anyhow::anyhow!("Failed to enqueue job: {}", e)))
+        })?;
 
         Ok(result.rows_affected() > 0)
     }
@@ -68,7 +73,9 @@ impl JobQueue {
         )
         .fetch_optional(&self.db)
         .await
-        .map_err(|e| ApiError::Internal(Arc::new(anyhow::anyhow!("Failed to dequeue job: {}", e))))?;
+        .map_err(|e| {
+            ApiError::Internal(Arc::new(anyhow::anyhow!("Failed to dequeue job: {}", e)))
+        })?;
 
         if let Some(r) = row {
             let payload_json: Value = r.get("payload");
@@ -107,7 +114,10 @@ impl JobQueue {
         .execute(&self.db)
         .await
         .map_err(|e| {
-            ApiError::Internal(Arc::new(anyhow::anyhow!("Failed to mark job as completed: {}", e)))
+            ApiError::Internal(Arc::new(anyhow::anyhow!(
+                "Failed to mark job as completed: {}",
+                e
+            )))
         })?;
 
         Ok(())
@@ -126,7 +136,12 @@ impl JobQueue {
         .bind(job_key)
         .execute(&self.db)
         .await
-        .map_err(|e| ApiError::Internal(Arc::new(anyhow::anyhow!("Failed to mark job as failed: {}", e))))?;
+        .map_err(|e| {
+            ApiError::Internal(Arc::new(anyhow::anyhow!(
+                "Failed to mark job as failed: {}",
+                e
+            )))
+        })?;
 
         Ok(())
     }
@@ -147,7 +162,9 @@ impl JobQueue {
         .bind(&job_key)
         .execute(&self.db)
         .await
-        .map_err(|e| ApiError::Internal(Arc::new(anyhow::anyhow!("Failed to requeue job: {}", e))))?;
+        .map_err(|e| {
+            ApiError::Internal(Arc::new(anyhow::anyhow!("Failed to requeue job: {}", e)))
+        })?;
 
         Ok(())
     }
@@ -166,7 +183,12 @@ impl JobQueue {
         )
         .fetch_one(&self.db)
         .await
-        .map_err(|e| ApiError::Internal(Arc::new(anyhow::anyhow!("Failed to get queue stats: {}", e))))?;
+        .map_err(|e| {
+            ApiError::Internal(Arc::new(anyhow::anyhow!(
+                "Failed to get queue stats: {}",
+                e
+            )))
+        })?;
 
         Ok(QueueStats {
             pending: row.get::<i64, _>("pending") as usize,

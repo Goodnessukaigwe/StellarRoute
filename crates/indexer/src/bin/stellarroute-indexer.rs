@@ -5,13 +5,13 @@
 use std::process;
 use tracing::{error, info};
 
+use std::time::Duration;
 use stellarroute_indexer::amm::{AmmAggregator, AmmConfig};
 use stellarroute_indexer::config::IndexerConfig;
 use stellarroute_indexer::db::{archival::ArchivalManager, Database};
 use stellarroute_indexer::horizon::HorizonClient;
 use stellarroute_indexer::sdex::SdexIndexer;
 use stellarroute_indexer::soroban::{SorobanRpcClient, StellarNetwork};
-use std::time::Duration;
 
 #[tokio::main]
 async fn main() {

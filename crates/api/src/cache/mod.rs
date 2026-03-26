@@ -143,7 +143,8 @@ impl<T: Send + Sync + 'static> SingleFlight<T> {
 
             // Return the result
             let res = inflight.result.read().await;
-            return res.as_ref()
+            return res
+                .as_ref()
                 .map(Arc::clone)
                 .expect("Result must be present after notification");
         }
@@ -158,7 +159,8 @@ impl<T: Send + Sync + 'static> SingleFlight<T> {
 
         // 3. Create a guard to ensure cleanup on drop (cancellation/panic)
         struct LeaderGuard<T: Send + Sync + 'static> {
-            inflight_map: Arc<tokio::sync::Mutex<std::collections::HashMap<String, Arc<InFlight<T>>>>>,
+            inflight_map:
+                Arc<tokio::sync::Mutex<std::collections::HashMap<String, Arc<InFlight<T>>>>>,
             key: String,
             inflight: Arc<InFlight<T>>,
         }
@@ -168,7 +170,7 @@ impl<T: Send + Sync + 'static> SingleFlight<T> {
                 // We need to notify waiters even if we didn't finish
                 // to avoid them hanging forever.
                 self.inflight.notify.notify_waiters();
-                
+
                 let inflight_map = self.inflight_map.clone();
                 let key = self.key.clone();
                 tokio::spawn(async move {
@@ -193,7 +195,7 @@ impl<T: Send + Sync + 'static> SingleFlight<T> {
             *res_mg = Some(Arc::clone(&result));
         }
         // Result is set, now when _guard drops, workers will see the result.
-        
+
         result
     }
 }
@@ -305,13 +307,14 @@ mod tests {
     async fn test_single_flight_cancellation_cleanup() {
         let sf = Arc::new(SingleFlight::<u64>::new());
         let sf_c = sf.clone();
-        
+
         // Start a leader that will be cancelled
         let handle = tokio::spawn(async move {
             sf_c.execute("cancel-test", || async move {
                 tokio::time::sleep(std::time::Duration::from_millis(100)).await;
                 Arc::new(0u64)
-            }).await
+            })
+            .await
         });
 
         // Give it a moment to start and register in-flight
@@ -322,17 +325,18 @@ mod tests {
         let follower = tokio::spawn(async move {
             sf_f.execute("cancel-test", || async move {
                 Arc::new(42u64) // This shouldn't run if it's following
-            }).await
+            })
+            .await
         });
 
         // Cancel the leader
         handle.abort();
 
-        // The follower should NOT hang. It should either get a "Result must be present" panic 
+        // The follower should NOT hang. It should either get a "Result must be present" panic
         // (if we don't handle None better) or we should handle the None case.
         // Actually, my current implementation panics for followers if leader didn't set result.
         // Let's refine the implementation to handle this or just verify it doesn't hang.
-        
+
         // Wait for follower with timeout
         let result = tokio::time::timeout(std::time::Duration::from_secs(1), follower).await;
         assert!(result.is_ok(), "Follower hung after leader cancellation");

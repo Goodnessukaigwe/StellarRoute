@@ -112,7 +112,9 @@ impl AppState {
             cache_policy,
             cache_metrics: Arc::new(CacheMetrics::default()),
             worker_pool,
-            quote_single_flight: Arc::new(SingleFlight::<crate::error::Result<QuoteResponse>>::new()),
+            quote_single_flight: Arc::new(
+                SingleFlight::<crate::error::Result<QuoteResponse>>::new(),
+            ),
         }
     }
 
@@ -136,7 +138,9 @@ impl AppState {
             cache_policy,
             cache_metrics: Arc::new(CacheMetrics::default()),
             worker_pool,
-            quote_single_flight: Arc::new(SingleFlight::<crate::error::Result<QuoteResponse>>::new()),
+            quote_single_flight: Arc::new(
+                SingleFlight::<crate::error::Result<QuoteResponse>>::new(),
+            ),
         }
     }
 

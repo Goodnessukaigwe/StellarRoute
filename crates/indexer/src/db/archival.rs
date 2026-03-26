@@ -109,7 +109,11 @@ impl ArchivalManager {
     /// # Arguments
     /// * `threshold_hours` - Hours after which snapshots are compacted
     /// * `retention_days` - Days after which snapshots are deleted
-    pub async fn compact_snapshots(&self, threshold_hours: i32, retention_days: i32) -> Result<i32> {
+    pub async fn compact_snapshots(
+        &self,
+        threshold_hours: i32,
+        retention_days: i32,
+    ) -> Result<i32> {
         let start = std::time::Instant::now();
         info!(
             "Running snapshot compaction (threshold: {}h, retention: {}d)",
@@ -156,7 +160,7 @@ impl ArchivalManager {
         for row in rows {
             let table_name: String = row.get(0);
             let deleted_count: i64 = row.get(1);
-            
+
             info!(
                 target: "stellarroute.indexer.maintenance",
                 metric = "stellarroute.indexer.retention_cleanup",
