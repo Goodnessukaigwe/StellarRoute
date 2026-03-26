@@ -123,10 +123,29 @@ fn bench_amm_quote_large_trade(c: &mut Criterion) {
     });
 }
 
+fn bench_pathfinding_fixture(c: &mut Criterion) {
+    c.bench_function("pathfind_fixture", |b| {
+        // Load the representative graph fixture
+        let fixture_data = include_str!("../fixtures/graph_fixture.json");
+        let edges: Vec<LiquidityEdge> = serde_json::from_str(fixture_data).expect("Valid fixture data");
+
+        b.iter(|| {
+            let config = PathfinderConfig {
+                max_depth: 4,
+                min_liquidity_threshold: 100_000,
+            };
+            let pathfinder = Pathfinder::new(config);
+
+            let _ = pathfinder.find_paths("XLM", "BTC", &edges, black_box(100_000_000));
+        })
+    });
+}
+
 criterion_group!(
     benches,
     bench_pathfinding_2hop,
     bench_pathfinding_4hop,
+    bench_pathfinding_fixture,
     bench_amm_quote,
     bench_amm_quote_large_trade
 );
