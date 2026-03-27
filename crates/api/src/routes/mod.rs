@@ -5,6 +5,7 @@ pub mod metrics;
 pub mod orderbook;
 pub mod pairs;
 pub mod quote;
+pub mod routes_endpoint; // ADDED THIS
 
 use axum::{routing::get, Router};
 use std::sync::Arc;
@@ -25,5 +26,6 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         )
         .route("/api/v1/quote/:base/:quote", get(quote::get_quote))
         .route("/api/v1/route/:base/:quote", get(quote::get_route))
+        .route("/api/v1/routes/:base/:quote", get(routes_endpoint::get_routes))
         .with_state(state)
 }

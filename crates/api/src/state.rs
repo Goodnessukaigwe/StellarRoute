@@ -6,7 +6,8 @@ use std::{sync::Arc, time::Duration};
 use tokio::sync::Mutex;
 
 use crate::cache::{CacheManager, SingleFlight};
-use crate::models::QuoteResponse;
+use crate::models::{QuoteResponse, RoutesResponse};
+use crate::graph::GraphManager;
 use crate::worker::{JobQueue, RouteWorkerPool, WorkerPoolConfig};
 
 /// Cache policy configuration
@@ -93,6 +94,10 @@ pub struct AppState {
     pub worker_pool: Arc<RouteWorkerPool>,
     /// Single-flight manager for quotes to prevent stampedes
     pub quote_single_flight: Arc<SingleFlight<crate::error::Result<QuoteResponse>>>,
+    /// Single-flight manager for routes
+    pub routes_single_flight: Arc<SingleFlight<crate::error::Result<RoutesResponse>>>,
+    /// Persistent background synced graph manager
+    pub graph_manager: Arc<GraphManager>,
 }
 
 impl AppState {
@@ -104,6 +109,8 @@ impl AppState {
     /// Create new application state with an explicit cache policy
     pub fn new_with_policy(db: PgPool, cache_policy: CachePolicy) -> Self {
         let worker_pool = Self::create_worker_pool(db.clone());
+        let graph_manager = Arc::new(GraphManager::new(db.clone()));
+        graph_manager.clone().start_sync();
 
         Self {
             db,
@@ -112,7 +119,11 @@ impl AppState {
             cache_policy,
             cache_metrics: Arc::new(CacheMetrics::default()),
             worker_pool,
-            quote_single_flight: Arc::new(SingleFlight::new()),
+            quote_single_flight: Arc::new(
+                SingleFlight::<crate::error::Result<QuoteResponse>>::new(),
+            ),
+            routes_single_flight: Arc::new(SingleFlight::new()),
+            graph_manager,
         }
     }
 
@@ -128,6 +139,8 @@ impl AppState {
         cache_policy: CachePolicy,
     ) -> Self {
         let worker_pool = Self::create_worker_pool(db.clone());
+        let graph_manager = Arc::new(GraphManager::new(db.clone()));
+        graph_manager.clone().start_sync();
 
         Self {
             db,
@@ -136,7 +149,11 @@ impl AppState {
             cache_policy,
             cache_metrics: Arc::new(CacheMetrics::default()),
             worker_pool,
-            quote_single_flight: Arc::new(SingleFlight::new()),
+            quote_single_flight: Arc::new(
+                SingleFlight::<crate::error::Result<QuoteResponse>>::new(),
+            ),
+            routes_single_flight: Arc::new(SingleFlight::new()),
+            graph_manager,
         }
     }
 

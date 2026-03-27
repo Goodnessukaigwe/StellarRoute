@@ -19,14 +19,14 @@ fn bench_pathfinding_2hop(c: &mut Criterion) {
                     to: "USDC".to_string(),
                     venue_type: "sdex".to_string(),
                     venue_ref: "offer1".to_string(),
-                    liquidity: 1_000_000_000,
+                    liquidity: 1, price: 1.0, fee_bps: 30,_000_000_000,
                 },
                 LiquidityEdge {
                     from: "USDC".to_string(),
                     to: "BTC".to_string(),
                     venue_type: "amm".to_string(),
                     venue_ref: "pool1".to_string(),
-                    liquidity: 500_000_000,
+                    liquidity: 500, price: 1.0, fee_bps: 30,_000_000,
                 },
             ];
 
@@ -56,28 +56,28 @@ fn bench_pathfinding_4hop(c: &mut Criterion) {
                     to: "USDC".to_string(),
                     venue_type: "sdex".to_string(),
                     venue_ref: "offer1".to_string(),
-                    liquidity: 2_000_000_000,
+                    liquidity: 2, price: 1.0, fee_bps: 30,_000_000_000,
                 },
                 LiquidityEdge {
                     from: "USDC".to_string(),
                     to: "EUR".to_string(),
                     venue_type: "amm".to_string(),
                     venue_ref: "pool1".to_string(),
-                    liquidity: 1_500_000_000,
+                    liquidity: 1, price: 1.0, fee_bps: 30,_500_000_000,
                 },
                 LiquidityEdge {
                     from: "EUR".to_string(),
                     to: "GBP".to_string(),
                     venue_type: "sdex".to_string(),
                     venue_ref: "offer2".to_string(),
-                    liquidity: 1_000_000_000,
+                    liquidity: 1, price: 1.0, fee_bps: 30,_000_000_000,
                 },
                 LiquidityEdge {
                     from: "GBP".to_string(),
                     to: "BTC".to_string(),
                     venue_type: "amm".to_string(),
                     venue_ref: "pool2".to_string(),
-                    liquidity: 800_000_000,
+                    liquidity: 800, price: 1.0, fee_bps: 30,_000_000,
                 },
                 // Additional cross-links
                 LiquidityEdge {
@@ -85,14 +85,14 @@ fn bench_pathfinding_4hop(c: &mut Criterion) {
                     to: "BTC".to_string(),
                     venue_type: "sdex".to_string(),
                     venue_ref: "offer3".to_string(),
-                    liquidity: 3_000_000_000,
+                    liquidity: 3, price: 1.0, fee_bps: 30,_000_000_000,
                 },
                 LiquidityEdge {
                     from: "XLM".to_string(),
                     to: "BTC".to_string(),
                     venue_type: "amm".to_string(),
                     venue_ref: "pool3".to_string(),
-                    liquidity: 1_200_000_000,
+                    liquidity: 1, price: 1.0, fee_bps: 30,_200_000_000,
                 },
             ];
 

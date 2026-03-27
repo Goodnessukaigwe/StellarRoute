@@ -9,8 +9,11 @@ import { RouteDisplay } from './RouteDisplay';
 import { SlippageControl } from './SlippageControl';
 import { SwapCTA } from './SwapCTA';
 import { SimulationPanel } from './SimulationPanel';
+import { FeeBreakdownPanel } from './FeeBreakdownPanel';
 import { useTradeFormStorage } from '@/hooks/useTradeFormStorage';
 import { useState } from 'react';
+import { STELLAR_NATIVE_MAX_DECIMALS } from '@/lib/amount-input';
+import { SwapValidationSchema } from '@/lib/swap-validation';
 
 export function SwapCard() {
   const {
@@ -24,21 +27,44 @@ export function SwapCard() {
 
   const [receiveAmount, setReceiveAmount] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [confidenceScore, setConfidenceScore] = useState<number>(85);
+  const [volatility, setVolatility] = useState<'high' | 'medium' | 'low'>('low');
 
-  // Derived state for the button
-  const isValidAmount = parseFloat(payAmount) > 0;
+  const validation = SwapValidationSchema.validate(
+    {
+      amount: payAmount,
+      maxDecimals: STELLAR_NATIVE_MAX_DECIMALS,
+      slippage,
+    },
+    { mode: 'submit', requirePair: false },
+  );
+  const isValidAmount = validation.amountResult.status === 'ok';
 
-  // Simulate quote fetching
+  // Simulate quote fetching with confidence and volatility
   const handlePayAmountChange = (amount: string) => {
     setPayAmount(amount);
     if (parseFloat(amount) > 0) {
       setIsLoading(true);
       setTimeout(() => {
-        setReceiveAmount((parseFloat(amount) * 0.98).toFixed(4));
+        const amountNum = parseFloat(amount);
+        setReceiveAmount((amountNum * 0.98).toFixed(4));
+        // Simulate varying confidence based on amount
+        const newConfidence = Math.max(50, Math.min(95, 90 - (amountNum / 100)));
+        setConfidenceScore(Math.round(newConfidence));
+        // Simulate volatility based on amount
+        if (amountNum > 1000) {
+          setVolatility('high');
+        } else if (amountNum > 100) {
+          setVolatility('medium');
+        } else {
+          setVolatility('low');
+        }
         setIsLoading(false);
       }, 500);
     } else {
       setReceiveAmount('');
+      setConfidenceScore(85);
+      setVolatility('low');
     }
   };
 
@@ -108,9 +134,8 @@ export function SwapCard() {
           </>
         )}
         <SwapCTA
-          amount={payAmount}
+          validation={validation}
           isLoading={isLoading}
-          hasPair={true}
           onSwap={() => console.log('Swapping...')}
         />
       </CardContent>
