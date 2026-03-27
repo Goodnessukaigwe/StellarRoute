@@ -15,6 +15,7 @@ pub mod server;
 pub mod state;
 pub mod telemetry;
 pub mod worker;
+pub mod graph;
 
 pub use cache::CacheManager;
 pub use docs::ApiDoc;
