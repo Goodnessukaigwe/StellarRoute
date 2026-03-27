@@ -214,11 +214,16 @@ export interface ApiError {
  * Machine-readable error codes returned by the StellarRoute API.
  */
 export type ApiErrorCode =
-  | 'invalid_asset'
-  | 'validation_error'
-  | 'not_found'
-  | 'rate_limit_exceeded'
   | 'internal_error'
-  | 'network_error'
-  | 'unknown_error'
-  | (string & Record<never, never>); // allow unknown codes without losing autocomplete
+  | 'bad_request'
+  | 'not_found'
+  | 'validation_error'
+  | 'rate_limit_exceeded'
+  | 'overloaded'
+  | 'unauthorized'
+  | 'invalid_asset'
+  | 'no_route'
+  | 'stale_market_data'
+  | 'network_error' // SDK specific
+  | 'unknown_error' // SDK specific
+  | (string & Record<never, never>);

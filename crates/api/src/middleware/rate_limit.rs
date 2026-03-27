@@ -40,7 +40,7 @@ use tokio::sync::Mutex;
 use tower::{Layer, Service};
 use tracing::{debug, warn};
 
-use crate::models::ErrorResponse;
+use crate::models::{ApiErrorCode, ErrorResponse};
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -368,7 +368,7 @@ where
                 let mut response = (
                     StatusCode::TOO_MANY_REQUESTS,
                     Json(ErrorResponse::new(
-                        "rate_limit_exceeded",
+                        ApiErrorCode::RateLimitExceeded,
                         "Too many requests. Please try again later.".to_string(),
                     )),
                 )

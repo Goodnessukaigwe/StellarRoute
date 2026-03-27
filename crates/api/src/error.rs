@@ -7,7 +7,7 @@ use axum::{
 };
 use thiserror::Error;
 
-use crate::models::ErrorResponse;
+use crate::models::{ApiErrorCode, ErrorResponse};
 
 use std::sync::Arc;
 
@@ -102,7 +102,7 @@ impl IntoResponse for ApiError {
                     "threshold_secs_amm": threshold_secs_amm,
                 });
                 let body = Json(
-                    ErrorResponse::new("stale_market_data", "All market data inputs are stale")
+                    ErrorResponse::new(ApiErrorCode::StaleMarketData, "All market data inputs are stale")
                         .with_details(details),
                 );
                 return (StatusCode::UNPROCESSABLE_ENTITY, body).into_response();
@@ -114,7 +114,7 @@ impl IntoResponse for ApiError {
             ),
         };
 
-        let body = Json(ErrorResponse::new(error_type, message));
+        let body = Json(ErrorResponse::new(code, message));
         (status, body).into_response()
     }
 }
@@ -173,5 +173,54 @@ mod tests {
         assert_eq!(details["fresh_count"], 1);
         assert_eq!(details["threshold_secs_sdex"], 30);
         assert_eq!(details["threshold_secs_amm"], 60);
+    }
+
+    #[tokio::test]
+    async fn bad_request_mapping() {
+        let err = ApiError::BadRequest("invalid query".to_string());
+        let (status, json) = response_parts(err).await;
+        assert_eq!(status, 400);
+        assert_eq!(json["error"], "bad_request");
+    }
+
+    #[tokio::test]
+    async fn not_found_mapping() {
+        let err = ApiError::NotFound("pair missing".to_string());
+        let (status, json) = response_parts(err).await;
+        assert_eq!(status, 404);
+        assert_eq!(json["error"], "not_found");
+    }
+
+    #[tokio::test]
+    async fn validation_mapping() {
+        let err = ApiError::Validation("amount low".to_string());
+        let (status, json) = response_parts(err).await;
+        assert_eq!(status, 400);
+        assert_eq!(json["error"], "validation_error");
+    }
+
+    #[tokio::test]
+    async fn rate_limit_mapping() {
+        let err = ApiError::RateLimitExceeded;
+        let (status, json) = response_parts(err).await;
+        assert_eq!(status, 429);
+        assert_eq!(json["error"], "rate_limit_exceeded");
+    }
+
+    #[tokio::test]
+    async fn internal_error_mapping() {
+        let err = ApiError::Internal(Arc::new(anyhow::anyhow!("oops")));
+        let (status, json) = response_parts(err).await;
+        assert_eq!(status, 500);
+        assert_eq!(json["error"], "internal_error");
+    }
+
+    #[tokio::test]
+    async fn database_error_mapping() {
+        // sqlx doesn't allow easy mock error creation, but we can check it maps to internal_error
+        let err = ApiError::Database(Arc::new(sqlx::Error::PoolClosed));
+        let (status, json) = response_parts(err).await;
+        assert_eq!(status, 500);
+        assert_eq!(json["error"], "internal_error");
     }
 }
