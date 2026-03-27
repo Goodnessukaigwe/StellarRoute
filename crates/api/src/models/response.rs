@@ -279,19 +279,62 @@ pub enum ExclusionReason {
     StaleData,
 }
 
+/// Machine-readable error codes for API failures
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ApiErrorCode {
+    /// Unexpected server-side failure
+    InternalError,
+    /// Malformed request or invalid parameters
+    BadRequest,
+    /// Requested resource not found
+    NotFound,
+    /// Request parameters failed validation
+    ValidationError,
+    /// Client exceeded rate limits
+    RateLimitExceeded,
+    /// Server is temporarily overloaded
+    Overloaded,
+    /// Request lacks valid credentials
+    Unauthorized,
+    /// Invalid Stellar asset identifier
+    InvalidAsset,
+    /// No executable trading route found
+    NoRoute,
+    /// Underlying market data is too stale to provide a quote
+    StaleMarketData,
+}
+
+impl ApiErrorCode {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::InternalError => "internal_error",
+            Self::BadRequest => "bad_request",
+            Self::NotFound => "not_found",
+            Self::ValidationError => "validation_error",
+            Self::RateLimitExceeded => "rate_limit_exceeded",
+            Self::Overloaded => "overloaded",
+            Self::Unauthorized => "unauthorized",
+            Self::InvalidAsset => "invalid_asset",
+            Self::NoRoute => "no_route",
+            Self::StaleMarketData => "stale_market_data",
+        }
+    }
+}
+
 /// Error response
 #[derive(Debug, Serialize, ToSchema)]
 pub struct ErrorResponse {
-    pub error: String,
+    pub error: ApiErrorCode,
     pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub details: Option<serde_json::Value>,
 }
 
 impl ErrorResponse {
-    pub fn new(error: impl Into<String>, message: impl Into<String>) -> Self {
+    pub fn new(error: ApiErrorCode, message: impl Into<String>) -> Self {
         Self {
-            error: error.into(),
+            error,
             message: message.into(),
             details: None,
         }
