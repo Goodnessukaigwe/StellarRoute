@@ -78,19 +78,27 @@ impl IntoResponse for ApiError {
             ),
             ApiError::RateLimitExceeded => (
                 StatusCode::TOO_MANY_REQUESTS,
-                "rate_limit_exceeded".to_string(),
+                ApiErrorCode::RateLimitExceeded,
                 "Too many requests. Please try again later.".to_string(),
             ),
             ApiError::Overloaded(msg) => (
                 StatusCode::SERVICE_UNAVAILABLE,
-                "overloaded".to_string(),
+                ApiErrorCode::Overloaded,
                 msg,
             ),
-            ApiError::Unauthorized(msg) => (StatusCode::UNAUTHORIZED, "unauthorized".to_string(), msg),
-            ApiError::InvalidAsset(msg) => (StatusCode::BAD_REQUEST, "invalid_asset".to_string(), msg),
+            ApiError::Unauthorized(msg) => (
+                StatusCode::UNAUTHORIZED,
+                ApiErrorCode::Unauthorized,
+                msg,
+            ),
+            ApiError::InvalidAsset(msg) => (
+                StatusCode::BAD_REQUEST,
+                ApiErrorCode::InvalidAsset,
+                msg,
+            ),
             ApiError::NoRouteFound => (
                 StatusCode::NOT_FOUND,
-                "no_route".to_string(),
+                ApiErrorCode::NoRoute,
                 "No trading route found for this pair".to_string(),
             ),
             ApiError::StaleMarketData {
@@ -106,14 +114,17 @@ impl IntoResponse for ApiError {
                     "threshold_secs_amm": threshold_secs_amm,
                 });
                 let body = Json(
-                    ErrorResponse::new(ApiErrorCode::StaleMarketData, "All market data inputs are stale")
-                        .with_details(details),
+                    ErrorResponse::new(
+                        ApiErrorCode::StaleMarketData,
+                        "All market data inputs are stale",
+                    )
+                    .with_details(details),
                 );
                 return (StatusCode::UNPROCESSABLE_ENTITY, body).into_response();
             }
             ApiError::Database(_) | ApiError::Internal(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "internal_error".to_string(),
+                ApiErrorCode::InternalError,
                 "An internal error occurred".to_string(),
             ),
         };

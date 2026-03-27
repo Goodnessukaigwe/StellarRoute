@@ -112,48 +112,6 @@ impl AssetPath {
     }
 }
 
-impl QuoteParams {
-    /// Get the slippage tolerance in basis points, applying default if omitted
-    pub fn slippage_bps(&self) -> u32 {
-        self.slippage_bps.unwrap_or(DEFAULT_SLIPPAGE_BPS)
-    }
-
-    /// Validate the quote parameters
-    /// Returns (error_code, error_message) if invalid
-    pub fn validate(&self) -> std::result::Result<(), (String, String)> {
-        // Validate amount if present
-        if let Some(amount_str) = &self.amount {
-            let amount: f64 = amount_str.parse().map_err(|_| {
-                (
-                    "invalid_amount".to_string(),
-                    format!("Amount must be a valid number: {}", amount_str),
-                )
-            })?;
-
-            if amount <= 0.0 {
-                return Err((
-                    "invalid_amount".to_string(),
-                    "Amount must be greater than zero".to_string(),
-                ));
-            }
-        }
-
-        // Validate slippage bounds
-        let bps = self.slippage_bps();
-        if bps > MAX_SLIPPAGE_BPS {
-            return Err((
-                "invalid_slippage".to_string(),
-                format!(
-                    "slippage_bps must be between 0 and {} (100%)",
-                    MAX_SLIPPAGE_BPS
-                ),
-            ));
-        }
-
-        Ok(())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

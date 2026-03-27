@@ -23,7 +23,6 @@ impl Redactor {
         artifact.base = redact_canonical_asset(&artifact.base);
         artifact.quote = redact_canonical_asset(&artifact.quote);
 
-        // Redact all asset_issuer fields in the original_output JSON tree
         Self::redact_value(&mut artifact.original_output);
     }
 

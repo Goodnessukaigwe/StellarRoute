@@ -530,6 +530,7 @@ async fn find_best_price(
     let policy = ExclusionPolicy {
         thresholds: health_config.thresholds.clone(),
         overrides: OverrideRegistry::from_entries(health_config.overrides.clone()),
+        circuit_breaker: Some(state.circuit_breaker.clone()),
     };
 
     // Apply filter (pass empty edges — we just need diagnostics for this single-hop path)
@@ -559,6 +560,9 @@ async fn find_best_price(
                 }
                 stellarroute_routing::health::policy::ExclusionReason::StaleData => {
                     ApiExclusionReason::StaleData
+                }
+                stellarroute_routing::health::policy::ExclusionReason::CircuitBreakerOpen => {
+                    ApiExclusionReason::CircuitBreakerOpen
                 }
             },
         })

@@ -308,6 +308,7 @@ pub enum ExclusionReason {
     PolicyThreshold { threshold: f64 },
     Override,
     StaleData,
+    CircuitBreakerOpen,
 }
 
 /// Machine-readable error codes for API failures
