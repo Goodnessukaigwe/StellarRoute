@@ -68,12 +68,12 @@ pub type Result<T> = std::result::Result<T, ApiError>;
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        let (status, code, message) = match self {
-            ApiError::BadRequest(msg) => (StatusCode::BAD_REQUEST, ApiErrorCode::BadRequest, msg),
-            ApiError::NotFound(msg) => (StatusCode::NOT_FOUND, ApiErrorCode::NotFound, msg),
+        let (status, error_type, message) = match self {
+            ApiError::BadRequest(msg) => (StatusCode::BAD_REQUEST, "bad_request".to_string(), msg),
+            ApiError::NotFound(msg) => (StatusCode::NOT_FOUND, "not_found".to_string(), msg),
             ApiError::Validation(message) => (
                 StatusCode::BAD_REQUEST,
-                ApiErrorCode::ValidationError,
+                "validation_error".to_string(),
                 message,
             ),
             ApiError::RateLimitExceeded => (
@@ -129,7 +129,21 @@ impl IntoResponse for ApiError {
             ),
         };
 
-        let body = Json(ErrorResponse::new(code, message));
+        let body = Json(ErrorResponse::new(
+            match error_type.as_str() {
+                "bad_request" => ApiErrorCode::BadRequest,
+                "not_found" => ApiErrorCode::NotFound,
+                "validation_error" => ApiErrorCode::ValidationError,
+                "rate_limit_exceeded" => ApiErrorCode::RateLimitExceeded,
+                "overloaded" => ApiErrorCode::Overloaded,
+                "unauthorized" => ApiErrorCode::Unauthorized,
+                "invalid_asset" => ApiErrorCode::InvalidAsset,
+                "no_route" => ApiErrorCode::NoRoute,
+                "stale_market_data" => ApiErrorCode::StaleMarketData,
+                _ => ApiErrorCode::InternalError,
+            },
+            message,
+        ));
         (status, body).into_response()
     }
 }

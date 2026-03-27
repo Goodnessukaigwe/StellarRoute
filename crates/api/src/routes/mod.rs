@@ -7,6 +7,7 @@ pub mod pairs;
 pub mod quote;
 
 pub mod replay;
+pub mod routes_endpoint;
 
 pub mod ws;
 pub mod routes_endpoint;

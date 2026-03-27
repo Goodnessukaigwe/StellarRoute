@@ -18,7 +18,7 @@ use crate::models::request::AssetPath;
 use crate::models::{AssetInfo, PathStep, QuoteRationaleMetadata, QuoteResponse, VenueEvaluation};
 use crate::state::AppState;
 
-use super::messages::{ServerMessage, ServerPayload, SubscriptionId};
+use super::messages::{ServerMessage, ServerPayload};
 use super::registry::SubscriptionRegistry;
 
 // ---------------------------------------------------------------------------
@@ -288,7 +288,7 @@ async fn send_or_remove(
 
 /// Send a `no_route_found` error to all subscriptions for a given pair.
 async fn send_no_route_to_pair(
-    state: &AppState,
+    _state: &AppState,
     registry: &Arc<RwLock<SubscriptionRegistry>>,
     base: &str,
     quote: &str,

@@ -40,11 +40,13 @@ where
             .map_err(|e| ApiError::BadRequest(format!("Invalid query parameters: {}", e)))?;
 
         // 3. Parse and validate assets
-        let base = AssetPath::parse(&base_str)
-            .map_err(|message| ApiError::Validation(format!("Invalid base asset: {}", message)))?;
+        let base = AssetPath::parse(&base_str).map_err(|message| {
+            ApiError::Validation(format!("Invalid base asset: {}", message))
+        })?;
 
-        let quote = AssetPath::parse(&quote_str)
-            .map_err(|message| ApiError::Validation(format!("Invalid quote asset: {}", message)))?;
+        let quote = AssetPath::parse(&quote_str).map_err(|message| {
+            ApiError::Validation(format!("Invalid quote asset: {}", message))
+        })?;
 
         // 4. Validate query params (amount, slippage)
         params

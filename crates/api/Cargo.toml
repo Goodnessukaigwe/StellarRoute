@@ -44,6 +44,7 @@ utoipa-swagger-ui = { version = "6", features = ["axum"] }
 # Concurrency utilities
 parking_lot = "0.12"
 arc-swap = { workspace = true }
+dashmap = "5.5"
 
 # CLI argument parsing
 clap = { version = "4", features = ["derive"] }
@@ -52,3 +53,5 @@ clap = { version = "4", features = ["derive"] }
 tokio-test = "0.4"
 tower = { version = "0.4", features = ["util"] }
 proptest.workspace = true
+tokio-tungstenite = "0.20"
+futures-util = "0.3"

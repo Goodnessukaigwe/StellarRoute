@@ -22,11 +22,12 @@ use axum::Json;
 use tokio::sync::{Mutex, RwLock};
 use uuid::Uuid;
 
-use crate::models::{ApiErrorCode, ErrorResponse};
 use crate::state::AppState;
+use crate::{
+    models::{ApiErrorCode, ErrorResponse},
+    routes::ws::registry::SubscriptionRegistry,
+};
 use connection::run_connection;
-
-use registry::SubscriptionRegistry;
 
 /// Configuration and shared state for the WebSocket endpoint.
 pub struct WsState {

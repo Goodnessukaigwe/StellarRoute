@@ -8,7 +8,10 @@ use tokio::sync::Mutex;
 use crate::cache::{CacheManager, SingleFlight};
 
 use crate::models::{QuoteResponse, RoutesResponse};
+use crate::replay::capture::CaptureHook;
 use crate::graph::GraphManager;
+use crate::routes::ws::WsState;
+use stellarroute_routing::health::circuit_breaker::CircuitBreakerRegistry;
 
 use crate::worker::{JobQueue, RouteWorkerPool, WorkerPoolConfig};
 use crate::replay::capture::CaptureHook;
@@ -107,9 +110,9 @@ pub struct AppState {
     pub routes_single_flight: Arc<SingleFlight<crate::error::Result<RoutesResponse>>>,
     /// Persistent background synced graph manager
     pub graph_manager: Arc<GraphManager>,
-    /// WebSocket state
+    /// WebSocket shared state
     pub ws: Option<Arc<WsState>>,
-    /// Automatic circuit breaker registry for liquidity providers
+    /// Shared circuit breaker registry for liquidity providers
     pub circuit_breaker: Arc<CircuitBreakerRegistry>,
 }
 
@@ -131,15 +134,14 @@ impl AppState {
             cache_policy,
             cache_metrics: Arc::new(CacheMetrics::default()),
             worker_pool,
-
             quote_single_flight: Arc::new(
                 SingleFlight::<crate::error::Result<QuoteResponse>>::new(),
             ),
             replay_capture: None,
             routes_single_flight: Arc::new(SingleFlight::new()),
             graph_manager,
-            ws: Some(WsState::from_env()),
-            circuit_breaker: Arc::new(CircuitBreakerRegistry::new(BreakerConfig::default())),
+            ws: None,
+            circuit_breaker: Arc::new(CircuitBreakerRegistry::default()),
         }
     }
 
@@ -170,8 +172,8 @@ impl AppState {
             replay_capture: None,
             routes_single_flight: Arc::new(SingleFlight::new()),
             graph_manager,
-            ws: Some(WsState::from_env()),
-            circuit_breaker: Arc::new(CircuitBreakerRegistry::new(BreakerConfig::default())),
+            ws: None,
+            circuit_breaker: Arc::new(CircuitBreakerRegistry::default()),
         }
     }
 

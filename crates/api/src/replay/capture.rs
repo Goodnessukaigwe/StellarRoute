@@ -5,8 +5,6 @@
 //! and persists the artifact in a detached `tokio::spawn` task — never blocking
 //! the quote response path.
 
-use std::sync::Arc;
-
 use chrono::Utc;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -15,7 +13,7 @@ use crate::models::QuoteResponse;
 use crate::replay::artifact::{
     HealthConfigSnapshot, LiquidityCandidate, ReplayArtifact, CURRENT_SCHEMA_VERSION,
 };
-use crate::replay::redactor::Redactor;
+use crate::replay::Redactor;
 
 /// Non-blocking capture hook.
 ///
@@ -23,7 +21,6 @@ use crate::replay::redactor::Redactor;
 /// Set to `None` when `REPLAY_CAPTURE_ENABLED` is `false` (default).
 pub struct CaptureHook {
     db: PgPool,
-    redactor: Redactor,
     /// When `false`, `capture()` is a no-op.
     pub enabled: bool,
 }
@@ -32,11 +29,7 @@ impl CaptureHook {
     /// Create a new hook. Pass `enabled = false` to disable capture without
     /// removing the hook from `AppState`.
     pub fn new(db: PgPool, enabled: bool) -> Self {
-        Self {
-            db,
-            redactor: Redactor,
-            enabled,
-        }
+        Self { db, enabled }
     }
 
     /// Create a hook whose enabled state is read from the

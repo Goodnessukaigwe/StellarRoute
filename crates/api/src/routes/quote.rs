@@ -100,7 +100,7 @@ pub async fn get_quote(
 
         let error_class = match &res {
             Ok(_) => "none",
-            Err(ApiError::Validation { .. }) | Err(ApiError::InvalidAsset(_)) => "validation",
+            Err(ApiError::Validation(_)) | Err(ApiError::InvalidAsset(_)) => "validation",
             Err(ApiError::NotFound(_)) | Err(ApiError::NoRouteFound) => "not_found",
             Err(ApiError::StaleMarketData { .. }) => "stale_market_data",
             Err(_) => "internal",
