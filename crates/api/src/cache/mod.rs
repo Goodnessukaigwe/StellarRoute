@@ -1,5 +1,6 @@
 //! Redis caching layer
 
+pub mod adaptive_ttl;
 pub mod invalidation;
 
 use redis::{aio::ConnectionManager, AsyncCommands, RedisError};
@@ -9,6 +10,11 @@ use std::time::Duration;
 use tracing::{debug, instrument, warn};
 
 pub use invalidation::{CacheInvalidationManager, LiquidityUpdateEvent};
+
+pub use adaptive_ttl::{
+    AdaptiveTtlConfig, AdaptiveTtlEngine, AdaptiveTtlStats, DepthAggregator, MarketMetrics,
+    TtlDecision, TtlReason, VolatilityCalculator,
+};
 
 /// Cache manager for Redis operations
 #[derive(Clone)]
