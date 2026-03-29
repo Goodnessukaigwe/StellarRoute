@@ -18,6 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { ActivityTableSkeleton } from "@/components/shared/ActivityTableSkeleton"
 import { formatDistanceToNow } from "date-fns"
 import { ExternalLink, Trash2, ArrowRight } from "lucide-react"
+import { CopyButton } from "@/components/shared/CopyButton"
 
 // Hardcode mock wallet to match DemoSwap
 const MOCK_WALLET = "GBSU...XYZ9"
@@ -70,8 +71,10 @@ export function TransactionHistory() {
       <div className="p-4 border-b flex flex-col sm:flex-row justify-between items-center gap-4 bg-muted/30">
         <div>
           <h2 className="text-2xl font-bold">Transaction History</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Wallet: <span className="font-mono text-foreground">{MOCK_WALLET}</span>
+          <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+            Wallet:{" "}
+            <span className="font-mono text-foreground">{MOCK_WALLET}</span>
+            <CopyButton value={MOCK_WALLET} label="Copy wallet address" />
           </p>
         </div>
 
@@ -162,15 +165,18 @@ export function TransactionHistory() {
                   </TableCell>
                   <TableCell className="text-right">
                     {tx.hash ? (
-                      <a
-                        href={`https://stellar.expert/explorer/public/tx/${tx.hash}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline group"
-                      >
-                        <span className="hidden sm:inline">View</span>
-                        <ExternalLink className="w-3 h-3 group-hover:translate-x-px group-hover:-translate-y-px transition-transform" />
-                      </a>
+                      <div className="inline-flex items-center gap-1 justify-end">
+                        <CopyButton value={tx.hash} label="Copy transaction hash" />
+                        <a
+                          href={`https://stellar.expert/explorer/public/tx/${tx.hash}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline group"
+                        >
+                          <span className="hidden sm:inline">View</span>
+                          <ExternalLink className="w-3 h-3 group-hover:translate-x-px group-hover:-translate-y-px transition-transform" />
+                        </a>
+                      </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">-</span>
                     )}
