@@ -8,9 +8,10 @@ pub mod health;
 pub mod impact;
 pub mod normalization;
 pub mod optimizer;
-pub mod simulator;
 pub mod pathfinder;
 pub mod policy;
+pub mod risk;
+pub mod simulator;
 
 pub use impact::{AmmQuoteCalculator, OrderbookImpactCalculator};
 pub use optimizer::{
@@ -18,6 +19,7 @@ pub use optimizer::{
 };
 pub use pathfinder::{LiquidityEdge, Pathfinder, PathfinderConfig, SwapPath};
 pub use policy::RoutingPolicy;
+pub use risk::{AssetRiskLimit, ExclusionReason, RiskLimitConfig, RiskValidator, RouteExclusion};
 
 /// Routing engine with integrated pathfinding and impact calculations
 pub struct RoutingEngine {

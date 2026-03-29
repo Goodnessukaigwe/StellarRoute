@@ -9,10 +9,19 @@ interface QuoteSummaryProps {
   isLoading?: boolean;
 }
 
-export function QuoteSummary({ rate, fee, priceImpact, isLoading = false }: QuoteSummaryProps) {
+export function QuoteSummary({
+  rate,
+  fee,
+  priceImpact,
+  isLoading = false,
+}: QuoteSummaryProps) {
   if (isLoading) {
     return <QuoteSummarySkeleton />;
   }
+
+  const displayRate = rate?.trim() || null;
+  const displayFee = fee?.trim() || null;
+  const displayPriceImpact = priceImpact?.trim() || null;
 
   return (
     <div className="rounded-xl border border-border/50 p-4 space-y-3 bg-muted/30">
