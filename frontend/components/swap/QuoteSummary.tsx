@@ -1,4 +1,4 @@
-"use client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { QuoteSummarySkeleton } from "./QuoteSummarySkeleton";
 
@@ -25,25 +25,23 @@ export function QuoteSummary({
 
   return (
     <div className="rounded-xl border border-border/50 p-4 space-y-3 bg-muted/30">
-      {displayRate && (
+      {rate && (
         <div className="flex justify-between items-center text-sm">
           <span className="text-muted-foreground">Rate</span>
-          <span className="font-medium truncate max-w-[60%]">{displayRate}</span>
+          <span className="font-medium truncate max-w-[60%]">{rate}</span>
         </div>
       )}
-
-      {displayFee && (
+      {fee && (
         <div className="flex justify-between items-center text-sm">
           <span className="text-muted-foreground">Network Fee</span>
-          <span className="font-medium truncate max-w-[60%]">{displayFee}</span>
+          <span className="font-medium truncate max-w-[60%]">{fee}</span>
         </div>
       )}
-
-      {displayPriceImpact && (
+      {priceImpact && (
         <div className="flex justify-between items-center text-sm">
           <span className="text-muted-foreground">Price Impact</span>
           <span className="font-medium text-emerald-500 min-w-0 truncate max-w-[60%]">
-            {displayPriceImpact}
+            {priceImpact}
           </span>
         </div>
       )}

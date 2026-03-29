@@ -1,6 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { RotateCcw } from 'lucide-react';
 import { PairSelector } from './PairSelector';
@@ -12,6 +13,8 @@ import { SimulationPanel } from './SimulationPanel';
 import { FeeBreakdownPanel } from './FeeBreakdownPanel';
 import { useTradeFormStorage } from '@/hooks/useTradeFormStorage';
 import { useState, useRef, useEffect } from 'react';
+import { SwapValidationSchema } from '@/lib/swap-validation';
+import { STELLAR_NATIVE_MAX_DECIMALS } from '@/lib/amount-input';
 
 export function SwapCard() {
   const {
@@ -27,7 +30,7 @@ export function SwapCard() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [confidenceScore, setConfidenceScore] = useState<number>(85);
   const [volatility, setVolatility] = useState<'high' | 'medium' | 'low'>('low');
-  const loadingTimeoutRef = useRef<NodeJS.Timeout>();
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -133,7 +136,7 @@ export function SwapCard() {
           receiveAmount={receiveAmount}
         />
         {isValidAmount && (
-          <>
+          <div className="space-y-4">
             <SimulationPanel
               payAmount={payAmount}
               expectedOutput={receiveAmount}
@@ -164,8 +167,7 @@ export function SwapCard() {
               volatility={volatility}
               isLoading={isLoading}
             />
-            <RouteDisplay amountOut={receiveAmount} />
-          </>
+          </div>
         )}
         <SwapCTA
           validation={validation}

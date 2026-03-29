@@ -10,7 +10,6 @@ pub mod replay;
 pub mod routes_endpoint;
 
 pub mod ws;
-pub mod routes_endpoint;
 
 
 use axum::{routing::{get, post}, Router};
@@ -32,6 +31,7 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         )
         .route("/api/v1/quote/:base/:quote", get(quote::get_quote))
         .route("/api/v1/route/:base/:quote", get(quote::get_route))
+        .route("/api/v1/batch/quote", axum::routing::post(quote::get_batch_quotes))
 
         // Replay routes
         .route("/api/v1/replay", get(replay::list_artifacts))
