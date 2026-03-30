@@ -49,7 +49,10 @@ impl GraphManager {
             };
 
             if let Err(e) = listener.listen("liquidity_update").await {
-                error!("Failed to listen on 'liquidity_update': {}. Falling back to 10s polling.", e);
+                error!(
+                    "Failed to listen on 'liquidity_update': {}. Falling back to 10s polling.",
+                    e
+                );
                 manager.run_polling_fallback().await;
                 return;
             }
@@ -59,7 +62,10 @@ impl GraphManager {
             loop {
                 match listener.recv().await {
                     Ok(notification) => {
-                        debug!("Received liquidity update notification: protocol={}", notification.payload());
+                        debug!(
+                            "Received liquidity update notification: protocol={}",
+                            notification.payload()
+                        );
                         if let Err(e) = manager.sync_graph().await {
                             error!("Failed to sync routing graph after notification: {}", e);
                         }

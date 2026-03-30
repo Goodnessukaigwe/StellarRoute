@@ -112,7 +112,9 @@ impl ReplayArtifact {
         .bind(payload)
         .fetch_one(db)
         .await
-        .map_err(|e| ApiError::Internal(anyhow::anyhow!("Failed to insert artifact: {}", e).into()))?;
+        .map_err(|e| {
+            ApiError::Internal(anyhow::anyhow!("Failed to insert artifact: {}", e).into())
+        })?;
 
         Ok(row.get("id"))
     }
@@ -125,7 +127,9 @@ impl ReplayArtifact {
         .bind(id)
         .fetch_optional(db)
         .await
-        .map_err(|e| ApiError::Internal(anyhow::anyhow!("Failed to fetch artifact: {}", e).into()))?;
+        .map_err(|e| {
+            ApiError::Internal(anyhow::anyhow!("Failed to fetch artifact: {}", e).into())
+        })?;
 
         match row {
             None => Err(ApiError::NotFound(format!("Replay artifact not found: {}", id))),
@@ -167,7 +171,9 @@ impl ReplayArtifact {
         .bind(offset)
         .fetch_all(db)
         .await
-        .map_err(|e| ApiError::Internal(anyhow::anyhow!("Failed to list artifacts: {}", e).into()))?;
+        .map_err(|e| {
+            ApiError::Internal(anyhow::anyhow!("Failed to list artifacts: {}", e).into())
+        })?;
 
         Ok(rows
             .into_iter()
@@ -190,7 +196,9 @@ impl ReplayArtifact {
         .bind(cutoff)
         .execute(db)
         .await
-        .map_err(|e| ApiError::Internal(anyhow::anyhow!("Failed to prune artifacts: {}", e).into()))?;
+        .map_err(|e| {
+            ApiError::Internal(anyhow::anyhow!("Failed to prune artifacts: {}", e).into())
+        })?;
 
         Ok(result.rows_affected())
     }

@@ -3,11 +3,10 @@
 //! [`run_broadcaster`] polls the database for liquidity changes and fans out
 //! [`ServerMessage::QuoteUpdate`] messages to all matching subscribers.
 
+use sqlx::Row;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
-
-use sqlx::Row;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
 use tracing::{debug, warn};
