@@ -75,10 +75,12 @@ fn test_strict_policy_excludes_low_liquidity() {
 
     let result = optimizer.find_optimal_routes("XLM", "USDC", &edges, 10_000_000, &routing_policy);
 
-    assert!(result.is_err() || {
-        let diagnostics = result.unwrap();
-        !diagnostics.excluded_routes.is_empty()
-    });
+    assert!(
+        result.is_err() || {
+            let diagnostics = result.unwrap();
+            !diagnostics.excluded_routes.is_empty()
+        }
+    );
 }
 
 #[test]
@@ -100,10 +102,12 @@ fn test_per_asset_overrides() {
 
     let result = optimizer.find_optimal_routes("XLM", "USDC", &edges, 10_000_000, &routing_policy);
 
-    assert!(result.is_err() || {
-        let diagnostics = result.unwrap();
-        !diagnostics.excluded_routes.is_empty()
-    });
+    assert!(
+        result.is_err() || {
+            let diagnostics = result.unwrap();
+            !diagnostics.excluded_routes.is_empty()
+        }
+    );
 }
 
 #[test]
@@ -124,12 +128,10 @@ fn test_blacklisted_asset_excluded() {
     let result = optimizer.find_optimal_routes("XLM", "USDC", &edges, 10_000_000, &routing_policy);
 
     if let Ok(diagnostics) = result {
-        assert!(
-            diagnostics
-                .excluded_routes
-                .iter()
-                .any(|e| e.asset == "USDC")
-        );
+        assert!(diagnostics
+            .excluded_routes
+            .iter()
+            .any(|e| e.asset == "USDC"));
     }
 }
 

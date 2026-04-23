@@ -63,7 +63,8 @@ fn endpoint_config_selects_orderbook_limit() {
 
     let cfg = EndpointConfig::default();
     assert_eq!(
-        cfg.for_path("/api/v1/orderbook/XLM/USDC", None).max_requests,
+        cfg.for_path("/api/v1/orderbook/XLM/USDC", None)
+            .max_requests,
         30
     );
 }

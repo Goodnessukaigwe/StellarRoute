@@ -60,8 +60,8 @@ impl OverrideRegistry {
 // ExclusionPolicy
 // ---------------------------------------------------------------------------
 
-use std::sync::Arc;
 use crate::health::circuit_breaker::CircuitBreakerRegistry;
+use std::sync::Arc;
 
 pub struct ExclusionPolicy {
     pub thresholds: ExclusionThresholds,

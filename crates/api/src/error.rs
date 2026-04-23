@@ -39,7 +39,12 @@ pub enum ApiError {
 
     #[error("Invalid asset: {0}")]
     InvalidAsset(String),
-
+    #[error("Invalid amount: {0}")]
+    InvalidAmount(String),
+    #[error("Invalid slippage: {0}")]
+    InvalidSlippage(String),
+    #[error("Invalid asset format: {0}")]
+    InvalidAssetFormat(String),
     #[error("No route found for trading pair")]
     NoRouteFound,
 
@@ -86,16 +91,21 @@ impl IntoResponse for ApiError {
                 ApiErrorCode::Overloaded,
                 msg,
             ),
-            ApiError::Unauthorized(msg) => (
-                StatusCode::UNAUTHORIZED,
-                ApiErrorCode::Unauthorized,
-                msg,
-            ),
-            ApiError::InvalidAsset(msg) => (
-                StatusCode::BAD_REQUEST,
-                ApiErrorCode::InvalidAsset,
-                msg,
-            ),
+            ApiError::Unauthorized(msg) => {
+                (StatusCode::UNAUTHORIZED, ApiErrorCode::Unauthorized, msg)
+            }
+            ApiError::InvalidAsset(msg) => {
+                (StatusCode::BAD_REQUEST, ApiErrorCode::InvalidAsset, msg)
+            }
+            ApiError::InvalidAmount(msg) => {
+                (StatusCode::BAD_REQUEST, ApiErrorCode::InvalidAmount, msg)
+            }
+            ApiError::InvalidSlippage(msg) => {
+                (StatusCode::BAD_REQUEST, ApiErrorCode::InvalidSlippage, msg)
+            }
+            ApiError::InvalidAssetFormat(msg) => {
+                (StatusCode::BAD_REQUEST, ApiErrorCode::InvalidAssetFormat, msg)
+            }
             ApiError::NoRouteFound => (
                 StatusCode::NOT_FOUND,
                 ApiErrorCode::NoRoute,

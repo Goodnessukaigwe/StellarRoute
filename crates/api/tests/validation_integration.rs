@@ -20,10 +20,7 @@ async fn setup_test_router() -> axum::Router {
         .connect_lazy("postgres://localhost/unused")
         .expect("Failed to create lazy pool");
 
-    Server::new(
-        ServerConfig::default(),
-        DatabasePools::new(pool, None),
-    )
+    Server::new(ServerConfig::default(), DatabasePools::new(pool, None))
         .await
         .into_router()
 }

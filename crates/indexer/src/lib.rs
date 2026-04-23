@@ -15,8 +15,8 @@ pub mod telemetry;
 pub mod sdex;
 pub mod soroban;
 
-use sqlx::PgPool;
 use crate::reconciliation::BackfillManager;
+use sqlx::PgPool;
 
 pub use deduplication::{
     DeduplicationConfig, DeduplicationResult, DeduplicatorState, DeduplicatorStats,

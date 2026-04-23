@@ -143,11 +143,7 @@ impl RiskValidator {
         &self.config
     }
 
-    pub fn validate_exposure(
-        &self,
-        asset: &str,
-        exposure: i128,
-    ) -> Result<(), RouteExclusion> {
+    pub fn validate_exposure(&self, asset: &str, exposure: i128) -> Result<(), RouteExclusion> {
         let limit = self.config.get_limit(asset);
 
         if limit.blacklisted {
@@ -171,11 +167,7 @@ impl RiskValidator {
         Ok(())
     }
 
-    pub fn validate_impact(
-        &self,
-        asset: &str,
-        impact_bps: u32,
-    ) -> Result<(), RouteExclusion> {
+    pub fn validate_impact(&self, asset: &str, impact_bps: u32) -> Result<(), RouteExclusion> {
         let limit = self.config.get_limit(asset);
 
         if limit.blacklisted {
@@ -199,11 +191,7 @@ impl RiskValidator {
         Ok(())
     }
 
-    pub fn validate_liquidity(
-        &self,
-        asset: &str,
-        liquidity: i128,
-    ) -> Result<(), RouteExclusion> {
+    pub fn validate_liquidity(&self, asset: &str, liquidity: i128) -> Result<(), RouteExclusion> {
         let limit = self.config.get_limit(asset);
 
         if limit.blacklisted {
@@ -287,8 +275,7 @@ mod tests {
 
     #[test]
     fn test_config_per_asset_override() {
-        let config = RiskLimitConfig::default()
-            .with_asset_limit("USDC", AssetRiskLimit::strict());
+        let config = RiskLimitConfig::default().with_asset_limit("USDC", AssetRiskLimit::strict());
 
         let xlm_limit = config.get_limit("XLM");
         assert_eq!(xlm_limit.max_impact_bps, 500);
@@ -307,11 +294,13 @@ mod tests {
 
     #[test]
     fn test_validator_exposure_fail() {
-        let config = RiskLimitConfig::default()
-            .with_asset_limit("XLM", AssetRiskLimit {
+        let config = RiskLimitConfig::default().with_asset_limit(
+            "XLM",
+            AssetRiskLimit {
                 max_exposure: 1_000_000,
                 ..Default::default()
-            });
+            },
+        );
         let validator = RiskValidator::new(config);
 
         let result = validator.validate_exposure("XLM", 2_000_000);
@@ -344,11 +333,13 @@ mod tests {
 
     #[test]
     fn test_validator_blacklisted_asset() {
-        let config = RiskLimitConfig::default()
-            .with_asset_limit("SCAM", AssetRiskLimit {
+        let config = RiskLimitConfig::default().with_asset_limit(
+            "SCAM",
+            AssetRiskLimit {
                 blacklisted: true,
                 ..Default::default()
-            });
+            },
+        );
         let validator = RiskValidator::new(config);
 
         let result = validator.validate_exposure("SCAM", 100);
@@ -362,12 +353,7 @@ mod tests {
         let config = RiskLimitConfig::strict_policy();
         let validator = RiskValidator::new(config);
 
-        let result = validator.validate_route(
-            "XLM",
-            100_000_000_000,
-            500,
-            10_000,
-        );
+        let result = validator.validate_route("XLM", 100_000_000_000, 500, 10_000);
         assert!(result.is_err());
         let exclusions = result.unwrap_err();
         assert!(exclusions.len() >= 2);
@@ -375,8 +361,7 @@ mod tests {
 
     #[test]
     fn test_config_json_roundtrip() {
-        let config = RiskLimitConfig::default()
-            .with_asset_limit("USDC", AssetRiskLimit::strict());
+        let config = RiskLimitConfig::default().with_asset_limit("USDC", AssetRiskLimit::strict());
 
         let json = config.to_json().unwrap();
         let parsed = RiskLimitConfig::from_json(&json).unwrap();

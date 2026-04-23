@@ -62,7 +62,8 @@ impl Database {
         let migration_0004 = include_str!("../../migrations/0004_normalized_liquidity.sql");
         let migration_0005 = include_str!("../../migrations/0005_venue_health_scores.sql");
         let migration_0006 = include_str!("../../migrations/0006_maintenance_policies.sql");
-        let migration_0007 = include_str!("../../migrations/0007_backfill_and_normalized_storage.sql");
+        let migration_0007 =
+            include_str!("../../migrations/0007_backfill_and_normalized_storage.sql");
         let migration_0008 = include_str!("../../migrations/0008_soroban_discovery_cursors.sql");
 
         // Execute migrations in order

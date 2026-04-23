@@ -261,19 +261,25 @@ impl HybridOptimizer {
                         .map(|e| e.liquidity)
                         .unwrap_or(0);
 
-                    if let Err(exclusion) = validator.validate_impact(&hop.destination_asset, metrics.impact_bps) {
+                    if let Err(exclusion) =
+                        validator.validate_impact(&hop.destination_asset, metrics.impact_bps)
+                    {
                         excluded_routes.push(exclusion);
                         path_valid = false;
                         break;
                     }
 
-                    if let Err(exclusion) = validator.validate_liquidity(&hop.destination_asset, edge_liquidity) {
+                    if let Err(exclusion) =
+                        validator.validate_liquidity(&hop.destination_asset, edge_liquidity)
+                    {
                         excluded_routes.push(exclusion);
                         path_valid = false;
                         break;
                     }
 
-                    if let Err(exclusion) = validator.validate_exposure(&hop.destination_asset, amount_in) {
+                    if let Err(exclusion) =
+                        validator.validate_exposure(&hop.destination_asset, amount_in)
+                    {
                         excluded_routes.push(exclusion);
                         path_valid = false;
                         break;

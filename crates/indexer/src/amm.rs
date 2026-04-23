@@ -81,13 +81,18 @@ impl AmmAggregator {
         let start_ledger: u64 = cursor_str.parse().unwrap_or(0);
 
         if start_ledger >= current_ledger {
-            debug!("No new ledgers to process for discovery (start={}, current={})", start_ledger, current_ledger);
+            debug!(
+                "No new ledgers to process for discovery (start={}, current={})",
+                start_ledger, current_ledger
+            );
         } else {
             // Discover new pools since last check
-            let new_pools = self.discover_new_pools(start_ledger, current_ledger).await?;
+            let new_pools = self
+                .discover_new_pools(start_ledger, current_ledger)
+                .await?;
             if !new_pools.is_empty() {
-                 info!("Discovered {} new pools", new_pools.len());
-                 self.process_pool_batch(&new_pools).await?;
+                info!("Discovered {} new pools", new_pools.len());
+                self.process_pool_batch(&new_pools).await?;
             }
         }
 
@@ -104,26 +109,29 @@ impl AmmAggregator {
         self.cleanup_stale_pools().await?;
 
         // Update cursor to current ledger
-        self.store_discovery_cursor(&current_ledger.to_string(), Some(current_ledger as i64), "running")
-            .await?;
+        self.store_discovery_cursor(
+            &current_ledger.to_string(),
+            Some(current_ledger as i64),
+            "running",
+        )
+        .await?;
 
         debug!("Completed AMM pool aggregation cycle");
         Ok(())
     }
 
     async fn load_discovery_cursor(&self) -> Result<String> {
-        let row = sqlx::query(
-            "SELECT cursor FROM soroban_sync_cursors WHERE job_name = $1",
-        )
-        .bind(DISCOVERY_CURSOR_JOB)
-        .fetch_optional(self.db.pool())
-        .await?;
+        let row = sqlx::query("SELECT cursor FROM soroban_sync_cursors WHERE job_name = $1")
+            .bind(DISCOVERY_CURSOR_JOB)
+            .fetch_optional(self.db.pool())
+            .await?;
 
         if let Some(row) = row {
             return Ok(row.get::<String, _>("cursor"));
         }
 
-        self.store_discovery_cursor("0", Some(0), "initialized").await?;
+        self.store_discovery_cursor("0", Some(0), "initialized")
+            .await?;
         Ok("0".to_string())
     }
 
@@ -155,7 +163,6 @@ impl AmmAggregator {
         Ok(())
     }
 
-
     /// Discover new pools via contract events
     async fn discover_new_pools(&self, start_ledger: u64, end_ledger: u64) -> Result<Vec<String>> {
         use crate::soroban::EventFilter;
@@ -166,7 +173,10 @@ impl AmmAggregator {
             topics: vec![vec!["pool_created".to_string()]], // Standard topic for pool discovery
         }];
 
-        let events = self.soroban.get_events(start_ledger, Some(end_ledger), filters).await?;
+        let events = self
+            .soroban
+            .get_events(start_ledger, Some(end_ledger), filters)
+            .await?;
         let mut new_pools = Vec::new();
 
         for event in events {
@@ -189,7 +199,6 @@ impl AmmAggregator {
 
         Ok(rows.into_iter().map(|r| r.get("pool_address")).collect())
     }
-
 
     /// Process a batch of pools
     async fn process_pool_batch(&self, pool_addresses: &[String]) -> Result<()> {

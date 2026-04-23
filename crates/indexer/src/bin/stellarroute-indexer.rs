@@ -45,13 +45,14 @@ async fn run_startup_reachability_checks(
         .map_err(|_| "Startup check failed: unable to create HTTP client".to_string())?;
 
     let horizon = format!("{}/", config.stellar_horizon_url.trim_end_matches('/'));
-    let horizon_status = http
-        .get(&horizon)
-        .send()
-        .await
-        .map_err(|_| "Startup check failed: STELLAR_HORIZON_URL is not reachable".to_string())?;
+    let horizon_status =
+        http.get(&horizon).send().await.map_err(|_| {
+            "Startup check failed: STELLAR_HORIZON_URL is not reachable".to_string()
+        })?;
     if !horizon_status.status().is_success() {
-        return Err("Startup check failed: STELLAR_HORIZON_URL returned non-success status".to_string());
+        return Err(
+            "Startup check failed: STELLAR_HORIZON_URL returned non-success status".to_string(),
+        );
     }
 
     soroban

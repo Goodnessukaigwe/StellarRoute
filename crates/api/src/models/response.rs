@@ -362,6 +362,12 @@ pub enum ApiErrorCode {
     Unauthorized,
     /// Invalid Stellar asset identifier
     InvalidAsset,
+    /// Invalid amount requested
+    InvalidAmount,
+    /// Invalid slippage tolerance
+    InvalidSlippage,
+    /// Malformed asset identifier format
+    InvalidAssetFormat,
     /// No executable trading route found
     NoRoute,
     /// Underlying market data is too stale to provide a quote
@@ -379,6 +385,9 @@ impl ApiErrorCode {
             Self::Overloaded => "overloaded",
             Self::Unauthorized => "unauthorized",
             Self::InvalidAsset => "invalid_asset",
+            Self::InvalidAmount => "invalid_amount",
+            Self::InvalidSlippage => "invalid_slippage",
+            Self::InvalidAssetFormat => "invalid_asset_format",
             Self::NoRoute => "no_route",
             Self::StaleMarketData => "stale_market_data",
         }

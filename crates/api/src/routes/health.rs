@@ -4,7 +4,10 @@ use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use std::{collections::HashMap, sync::Arc};
 use tracing::warn;
 
-use crate::{models::{DependenciesHealthResponse, HealthResponse}, state::AppState};
+use crate::{
+    models::{DependenciesHealthResponse, HealthResponse},
+    state::AppState,
+};
 
 /// Health check endpoint
 ///
@@ -91,9 +94,7 @@ pub async fn health_check(State(state): State<Arc<AppState>>) -> impl IntoRespon
         (status = 503, description = "One or more dependencies degraded", body = DependenciesHealthResponse),
     )
 )]
-pub async fn dependency_health(
-    State(state): State<Arc<AppState>>,
-) -> impl IntoResponse {
+pub async fn dependency_health(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     let timestamp = chrono::Utc::now().to_rfc3339();
     let mut components: HashMap<String, String> = HashMap::new();
     let mut all_ok = true;

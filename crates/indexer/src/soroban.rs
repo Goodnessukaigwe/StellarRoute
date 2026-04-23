@@ -237,11 +237,12 @@ impl SorobanRpc for SorobanRpcClient {
         }
 
         let result = self.request("getEvents", params).await?;
-        
+
         // Handle paginated response if necessary, but for simplicity we assume it fits
-        let events: Vec<SorobanEvent> = serde_json::from_value(result.get("events").cloned().unwrap_or(json!([])))
-            .map_err(|e| IndexerError::SorobanRpc(format!("failed to parse events: {e}")))?;
-            
+        let events: Vec<SorobanEvent> =
+            serde_json::from_value(result.get("events").cloned().unwrap_or(json!([])))
+                .map_err(|e| IndexerError::SorobanRpc(format!("failed to parse events: {e}")))?;
+
         Ok(events)
     }
 

@@ -174,44 +174,39 @@ pub async fn get_routes(
             );
 
             // ── Map diagnostics → response DTO ─────────────────────────────
-            let build_candidate =
-                |path: &stellarroute_routing::pathfinder::SwapPath,
-                 metrics: &stellarroute_routing::optimizer::RouteMetrics|
-                 -> RouteCandidate {
-                    let mut hops = Vec::new();
-                    let mut active = amount_e7;
+            let build_candidate = |path: &stellarroute_routing::pathfinder::SwapPath,
+                                   metrics: &stellarroute_routing::optimizer::RouteMetrics|
+             -> RouteCandidate {
+                let mut hops = Vec::new();
+                let mut active = amount_e7;
 
-                    for h in &path.hops {
-                        let after_fee =
-                            (active * (10000 - h.fee_bps as i128)) / 10000;
-                        let out = (after_fee as f64 * h.price) as i128;
+                for h in &path.hops {
+                    let after_fee = (active * (10000 - h.fee_bps as i128)) / 10000;
+                    let out = (after_fee as f64 * h.price) as i128;
 
-                        hops.push(RouteHop {
-                            from_asset: parse_asset_to_info(&h.source_asset),
-                            to_asset: parse_asset_to_info(&h.destination_asset),
-                            price: format!("{:.7}", h.price),
-                            amount_out_of_hop: format!("{:.7}", out as f64 / 1e7),
-                            fee_bps: h.fee_bps,
-                            source: if h.venue_type == "amm" {
-                                format!("amm:{}", h.venue_ref)
-                            } else {
-                                "sdex".into()
-                            },
-                        });
-                        active = out;
-                    }
+                    hops.push(RouteHop {
+                        from_asset: parse_asset_to_info(&h.source_asset),
+                        to_asset: parse_asset_to_info(&h.destination_asset),
+                        price: format!("{:.7}", h.price),
+                        amount_out_of_hop: format!("{:.7}", out as f64 / 1e7),
+                        fee_bps: h.fee_bps,
+                        source: if h.venue_type == "amm" {
+                            format!("amm:{}", h.venue_ref)
+                        } else {
+                            "sdex".into()
+                        },
+                    });
+                    active = out;
+                }
 
-                    RouteCandidate {
-                        estimated_output: format!(
-                            "{:.7}",
-                            metrics.output_amount as f64 / 1e7
-                        ),
-                        impact_bps: metrics.impact_bps,
-                        score: metrics.score,
-                        policy_used: diag.policy.environment.clone(),
-                        path: hops,
-                    }
-                };
+                RouteCandidate {
+                    estimated_output: format!("{:.7}", metrics.output_amount as f64 / 1e7),
+                    impact_bps: metrics.impact_bps,
+                    score: metrics.score,
+                    policy_used: diag.policy.environment.clone(),
+                    path: hops,
+                }
+            };
 
             let mut routes = Vec::with_capacity(limit_param);
             routes.push(build_candidate(&diag.selected_path, &diag.metrics));

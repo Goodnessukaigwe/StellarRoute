@@ -11,11 +11,11 @@ pub mod rate_limit;
 
 use std::collections::HashMap;
 use std::net::SocketAddr;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use axum::extract::{ConnectInfo, State, ws::WebSocketUpgrade};
+use axum::extract::{ws::WebSocketUpgrade, ConnectInfo, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;

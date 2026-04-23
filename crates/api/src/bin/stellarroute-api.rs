@@ -2,7 +2,7 @@
 
 use sqlx::postgres::PgPoolOptions;
 use std::time::Duration;
-use stellarroute_api::{telemetry, state::DatabasePools, Server, ServerConfig};
+use stellarroute_api::{state::DatabasePools, telemetry, Server, ServerConfig};
 use tracing::{error, info};
 
 fn parse_bool_env(name: &str) -> bool {
@@ -36,7 +36,10 @@ fn validate_required_env() -> Result<(), String> {
     }
 }
 
-async fn run_startup_credential_checks(database_url: &str, redis_url: Option<&str>) -> Result<(), String> {
+async fn run_startup_credential_checks(
+    database_url: &str,
+    redis_url: Option<&str>,
+) -> Result<(), String> {
     if sqlx::postgres::PgPoolOptions::new()
         .max_connections(1)
         .acquire_timeout(Duration::from_secs(5))
@@ -50,14 +53,17 @@ async fn run_startup_credential_checks(database_url: &str, redis_url: Option<&st
     if let Some(redis_url) = redis_url {
         let client = redis::Client::open(redis_url)
             .map_err(|_| "Startup credential check failed: REDIS_URL is invalid".to_string())?;
-        let mut conn = client
-            .get_connection()
-            .map_err(|_| "Startup credential check failed: REDIS_URL is not reachable".to_string())?;
+        let mut conn = client.get_connection().map_err(|_| {
+            "Startup credential check failed: REDIS_URL is not reachable".to_string()
+        })?;
         let pong: String = redis::cmd("PING")
             .query(&mut conn)
             .map_err(|_| "Startup credential check failed: REDIS_URL ping failed".to_string())?;
         if pong != "PONG" {
-            return Err("Startup credential check failed: REDIS_URL ping returned unexpected response".to_string());
+            return Err(
+                "Startup credential check failed: REDIS_URL ping returned unexpected response"
+                    .to_string(),
+            );
         }
     }
 
@@ -66,7 +72,9 @@ async fn run_startup_credential_checks(database_url: &str, redis_url: Option<&st
             let client = reqwest::Client::builder()
                 .timeout(Duration::from_secs(5))
                 .build()
-                .map_err(|_| "Startup credential check failed: unable to create HTTP client".to_string())?;
+                .map_err(|_| {
+                    "Startup credential check failed: unable to create HTTP client".to_string()
+                })?;
             let body = serde_json::json!({
                 "jsonrpc": "2.0",
                 "id": "startup-check",
@@ -78,9 +86,14 @@ async fn run_startup_credential_checks(database_url: &str, redis_url: Option<&st
                 .json(&body)
                 .send()
                 .await
-                .map_err(|_| "Startup credential check failed: SOROBAN_RPC_URL is not reachable".to_string())?;
+                .map_err(|_| {
+                    "Startup credential check failed: SOROBAN_RPC_URL is not reachable".to_string()
+                })?;
             if !response.status().is_success() {
-                return Err("Startup credential check failed: SOROBAN_RPC_URL returned non-success status".to_string());
+                return Err(
+                    "Startup credential check failed: SOROBAN_RPC_URL returned non-success status"
+                        .to_string(),
+                );
             }
         }
     }
@@ -108,7 +121,9 @@ async fn main() {
     let startup_credential_checks = parse_bool_env("STARTUP_CREDENTIAL_CHECK");
     if startup_credential_checks {
         info!("Running startup credential reachability checks");
-        if let Err(message) = run_startup_credential_checks(&database_url, redis_url.as_deref()).await {
+        if let Err(message) =
+            run_startup_credential_checks(&database_url, redis_url.as_deref()).await
+        {
             error!("{}", message);
             std::process::exit(1);
         }
@@ -164,9 +179,12 @@ async fn main() {
         .max_lifetime(Duration::from_secs(max_lifetime_secs))
         .after_connect(move |conn, _meta| {
             Box::pin(async move {
-                sqlx::query(&format!("SET statement_timeout = '{}ms'", statement_timeout_ms))
-                    .execute(&mut *conn)
-                    .await?;
+                sqlx::query(&format!(
+                    "SET statement_timeout = '{}ms'",
+                    statement_timeout_ms
+                ))
+                .execute(&mut *conn)
+                .await?;
                 sqlx::query(&format!("SET lock_timeout = '{}ms'", lock_timeout_ms))
                     .execute(&mut *conn)
                     .await?;
