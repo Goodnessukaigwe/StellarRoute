@@ -2,6 +2,13 @@
 //!
 //! Demonstrates stable throughput under sustained load
 
+pub mod harness;
+
+pub use harness::{
+    LoadTestHarness, HarnessConfig, HarnessResults, TrafficMix, TrafficType,
+    AmountDistribution, DegradationScenario
+};
+
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
@@ -145,7 +152,7 @@ impl Default for LoadTestMetrics {
 }
 
 /// Calculate percentile from sorted latencies
-fn percentile(sorted_latencies: &[u128], percentile: f64) -> u128 {
+pub fn percentile(sorted_latencies: &[u128], percentile: f64) -> u128 {
     if sorted_latencies.is_empty() {
         return 0;
     }
