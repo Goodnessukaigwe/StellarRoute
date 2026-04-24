@@ -1,6 +1,8 @@
 use crate::cache::CacheManager;
 use stellarroute_routing::health::policy::{OverrideDirective, OverrideRegistry};
 use stellarroute_routing::health::scorer::VenueType;
+use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -8,7 +10,7 @@ use tracing::{info, warn};
 
 const REDIS_KILL_SWITCH_KEY: &str = "stellarroute:kill_switches";
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct KillSwitchState {
     pub sources: HashMap<VenueType, OverrideDirective>,
     pub venues: HashMap<String, OverrideDirective>,

@@ -4,6 +4,7 @@
 //! Supports N-hop paths with safety bounds, cycle prevention, and price impact calculation.
 
 pub mod adaptive_routing;
+pub mod canary;
 pub mod consensus;
 pub mod error;
 pub mod fixtures;
@@ -17,6 +18,7 @@ pub mod risk;
 pub mod simulator;
 
 pub use adaptive_routing::{AdaptiveError, AdaptivePolicy, AdaptiveRouter, QualityMetrics};
+pub use canary::{CanaryConfig, CanaryEvaluation, CanaryEvaluator};
 pub use consensus::{
     ConsensusDiagnostics, ConsensusEngine, ConsensusError, ConsensusPolicy, RouteCandidate,
 };

@@ -11,6 +11,7 @@ use crate::graph::GraphManager;
 use crate::models::{QuoteResponse, RoutesResponse};
 use crate::replay::capture::CaptureHook;
 use crate::routes::ws::WsState;
+use stellarroute_routing::canary::{CanaryConfig, CanaryEvaluation};
 use stellarroute_routing::health::circuit_breaker::CircuitBreakerRegistry;
 
 use crate::worker::{JobQueue, RouteWorkerPool, WorkerPoolConfig};
@@ -139,6 +140,10 @@ pub struct AppState {
     pub kill_switch: Arc<crate::kill_switch::KillSwitchManager>,
     /// Shared liquidity anomaly detector
     pub anomaly_detector: Arc<tokio::sync::Mutex<stellarroute_routing::health::anomaly::LiquidityAnomalyDetector>>,
+    /// Canary configuration for side-by-side policy evaluation
+    pub canary_config: Arc<tokio::sync::RwLock<CanaryConfig>>,
+    /// Canary history buffer for operator reporting
+    pub canary_history: Arc<tokio::sync::RwLock<std::collections::VecDeque<CanaryEvaluation>>>,
 }
 
 impl AppState {
@@ -166,11 +171,13 @@ impl AppState {
             >::new()),
             replay_capture: None,
             routes_single_flight: Arc::new(SingleFlight::new()),
+            anomaly_detector: graph_manager.anomaly_detector.clone(),
             graph_manager,
             ws: None,
             circuit_breaker: Arc::new(CircuitBreakerRegistry::default()),
             kill_switch,
-            anomaly_detector: graph_manager.anomaly_detector.clone(),
+            canary_config: Arc::new(tokio::sync::RwLock::new(CanaryConfig::default())),
+            canary_history: Arc::new(tokio::sync::RwLock::new(std::collections::VecDeque::with_capacity(1000))),
         }
     }
 
@@ -212,11 +219,13 @@ impl AppState {
             >::new()),
             replay_capture: None,
             routes_single_flight: Arc::new(SingleFlight::new()),
+            anomaly_detector: graph_manager.anomaly_detector.clone(),
             graph_manager,
             ws: None,
             circuit_breaker: Arc::new(CircuitBreakerRegistry::default()),
             kill_switch,
-            anomaly_detector: graph_manager.anomaly_detector.clone(),
+            canary_config: Arc::new(tokio::sync::RwLock::new(CanaryConfig::default())),
+            canary_history: Arc::new(tokio::sync::RwLock::new(std::collections::VecDeque::with_capacity(1000))),
         }
     }
 

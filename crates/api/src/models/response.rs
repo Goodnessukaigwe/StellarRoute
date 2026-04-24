@@ -340,6 +340,7 @@ pub enum ExclusionReason {
     Override,
     StaleData,
     CircuitBreakerOpen,
+    LiquidityAnomaly,
 }
 
 /// Machine-readable error codes for API failures

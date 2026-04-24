@@ -648,6 +648,9 @@ async fn find_best_price(
                 stellarroute_routing::health::policy::ExclusionReason::CircuitBreakerOpen => {
                     ApiExclusionReason::CircuitBreakerOpen
                 }
+                stellarroute_routing::health::policy::ExclusionReason::LiquidityAnomaly { .. } => {
+                    ApiExclusionReason::LiquidityAnomaly
+                }
             },
         })
         .collect();

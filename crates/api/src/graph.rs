@@ -3,14 +3,15 @@ use arc_swap::ArcSwap;
 use sqlx::{postgres::PgListener, PgPool, Row};
 use std::sync::Arc;
 use tracing::{debug, error, info, warn};
+use stellarroute_routing::health::anomaly::LiquidityAnomalyDetector;
 
 use stellarroute_routing::pathfinder::LiquidityEdge;
 
 /// Daemon that maintains an active in-memory cache of the routing graph
 pub struct GraphManager {
-    db: PgPool,
-    edges: Arc<ArcSwap<Vec<LiquidityEdge>>>,
-    anomaly_detector: Arc<tokio::sync::Mutex<stellarroute_routing::health::anomaly::LiquidityAnomalyDetector>>,
+    pub db: PgPool,
+    pub edges: Arc<ArcSwap<Vec<LiquidityEdge>>>,
+    pub anomaly_detector: Arc<tokio::sync::Mutex<LiquidityAnomalyDetector>>,
 }
 
 impl GraphManager {
@@ -225,6 +226,8 @@ mod tests {
             liquidity: 100,
             price: 1.0,
             fee_bps: 30,
+            anomaly_score: 0.0,
+            anomaly_reasons: vec![],
         }];
 
         // Set initial state
@@ -244,6 +247,8 @@ mod tests {
             liquidity: 200,
             price: 0.99,
             fee_bps: 30,
+            anomaly_score: 0.0,
+            anomaly_reasons: vec![],
         }];
         manager.edges.store(Arc::new(new_edges));
 
@@ -270,6 +275,8 @@ mod tests {
             liquidity: 100,
             price: 1.0,
             fee_bps: 30,
+            anomaly_score: 0.0,
+            anomaly_reasons: vec![],
         }];
         manager.edges.store(Arc::new(initial_edges));
 
@@ -296,6 +303,8 @@ mod tests {
                     liquidity: 100,
                     price: 1.0,
                     fee_bps: 30,
+            anomaly_score: 0.0,
+            anomaly_reasons: vec![],
                 }];
                 m2.edges.store(Arc::new(edges));
                 tokio::time::sleep(std::time::Duration::from_millis(1)).await;

@@ -193,6 +193,8 @@ impl Pathfinder {
                         venue_ref: edge.venue_ref.clone(),
                         price: edge.price,
                         fee_bps: edge.fee_bps,
+                        anomaly_score: 0.0,
+                        anomaly_reasons: vec![],
                     };
 
                     // Simple output estimation (50bps slippage per hop)
