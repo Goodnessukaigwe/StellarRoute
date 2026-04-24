@@ -122,42 +122,27 @@ pub async fn get_routes(
         .routes_single_flight
         .execute(&sf_key, || async move {
             // Read the pre-built in-memory liquidity graph — zero DB hit
-            let all_edges = state_c.graph_manager.get_edges();
+            let compacted_graph = state_c.graph_manager.get_edges();
 
-            if all_edges.is_empty() {
+            if compacted_graph.asset_count() == 0 {
                 return Arc::new(Err(ApiError::NoRouteFound));
             }
 
-            // Apply kill switches to edges
+            // Apply kill switches via a logic that works with compacted indices?
+            // For now, we perform filtering during BFS in the pathfinder which is safer.
+            // However, we need to pass the exclusion policy down.
             let overrides = state_c.kill_switch.get_override_registry().await;
-            let policy = ExclusionPolicy {
+            let exclusion_policy = ExclusionPolicy {
                 thresholds: Default::default(),
                 overrides,
                 circuit_breaker: Some(state_c.circuit_breaker.clone()),
             };
 
-            let edges: Vec<_> = all_edges
-                .iter()
-                .filter(|e| {
-                    let v_type = if e.venue_type == "amm" {
-                        VenueType::Amm
-                    } else {
-                        VenueType::Sdex
-                    };
-                    !policy.is_excluded(&e.venue_ref, &v_type)
-                })
-                .cloned()
-                .collect();
-
-            if edges.is_empty() {
-                return Arc::new(Err(ApiError::NoRouteFound));
-            }
-
             let amount_e7 = (amount * 1e7) as i128;
 
-            let edges_canary = edges.clone();
             let base_canary = base_c.clone();
             let quote_canary = quote_c.clone();
+            let graph_canary = compacted_graph.clone();
 
             // Offload CPU-bound BFS to blocking thread pool to prevent async starvation
             let spawn_result = tokio::task::spawn_blocking(move || {
@@ -172,10 +157,10 @@ pub async fn get_routes(
                 let base_canonical = asset_path_to_info(&base_c).to_canonical();
                 let quote_canonical = asset_path_to_info(&quote_c).to_canonical();
 
-                optimizer.find_optimal_routes(
+                optimizer.find_optimal_routes_compacted(
                     &base_canonical,
                     &quote_canonical,
-                    &edges,
+                    &compacted_graph,
                     amount_e7,
                     &routing_policy,
                 )
@@ -231,7 +216,7 @@ pub async fn get_routes(
                     if optimizer.set_active_policy(&candidate_policy).is_err() {
                         return None;
                     }
-                    optimizer.find_optimal_routes(&base_str, &quote_str, &edges_canary, amount_e7_canary, &rp).ok()
+                    optimizer.find_optimal_routes_compacted(&base_str, &quote_str, &graph_canary, amount_e7_canary, &rp).ok()
                 }).await;
 
                 if let Ok(Some(candidate_diag)) = candidate_result {
