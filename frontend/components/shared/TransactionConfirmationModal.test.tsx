@@ -48,8 +48,8 @@ describe("TransactionConfirmationModal", () => {
     );
 
     expect(
-      screen.getByText("Review your transaction details before signing."),
-    ).toBeTruthy();
+      screen.getAllByText("Review your transaction details before signing.").length,
+    ).toBeGreaterThan(0);
 
     // 100 with 1% slippage => 99 min received (route viz also shows "99 USDC" in a separate node)
     expect(
