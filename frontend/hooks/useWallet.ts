@@ -16,6 +16,10 @@ const initialState: WalletSession = {
   isConnected: false,
 };
 
+/**
+ * Legacy useWallet hook - prefer using the WalletProvider context instead
+ * @deprecated Use useWallet from @/components/providers/wallet-provider
+ */
 export function useWallet() {
   const [session, setSession] = useState<WalletSession>(initialState);
   const [availableWallets, setAvailableWallets] = useState<
