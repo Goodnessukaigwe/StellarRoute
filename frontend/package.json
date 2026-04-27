@@ -11,6 +11,8 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:visual": "playwright test e2e/visual-baseline.spec.ts",
+    "test:visual:update": "playwright test e2e/visual-baseline.spec.ts --update-snapshots",
     "storybook": "ladle dev",
     "storybook:ci": "ladle build",
     "perf:check": "node scripts/check-perf-budget.mjs",
