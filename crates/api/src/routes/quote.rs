@@ -567,14 +567,18 @@ pub(crate) async fn get_quote_inner(
             };
 
             // Cache the serialized JSON once so future hits skip serde work.
+            // Apply jitter to the TTL to prevent synchronized expiry storms
+            // across hot pairs (cache stampede protection).
             if let Some(cache) = &state.cache {
                 if let Ok(mut cache) = cache.try_lock() {
+                    let jitter = crate::cache::JitteredTtl::default();
+                    let jittered_ttl = jitter.apply(state.cache_policy.quote_ttl);
                     let _ = cache
                         .set_json(
                             &quote_cache_key,
                             std::str::from_utf8(prepared.json_bytes())
                                 .expect("quote JSON serialization is valid UTF-8"),
-                            state.cache_policy.quote_ttl,
+                            jittered_ttl,
                         )
                         .await;
                 }
