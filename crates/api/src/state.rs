@@ -17,9 +17,9 @@ use stellarroute_routing::canary::{CanaryConfig, CanaryEvaluation};
 use stellarroute_routing::health::circuit_breaker::CircuitBreakerRegistry;
 
 use crate::audit::AuditWriter;
+use crate::exactlyonce::DedupeLedger;
 use crate::indexer_lag::IndexerLagMonitor;
 use crate::worker::{JobQueue, RouteWorkerPool, WorkerPoolConfig};
-use crate::exactlyonce::DedupeLedger;
 
 /// Primary database pool for write operations plus an optional replica pool
 /// for read-heavy endpoints.

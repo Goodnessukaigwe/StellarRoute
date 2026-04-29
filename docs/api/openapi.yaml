@@ -686,7 +686,7 @@ components:
       description: Link to migration guidance for deprecated v1 routes.
       schema:
         type: string
-        example: "</docs/api/v1-migration-guide>; rel=\"deprecation\""
+        example: '</docs/api/v1-migration-guide>; rel="deprecation"'
 
   schemas:
     HealthResponse:
@@ -891,7 +891,18 @@ components:
 
     QuoteResponse:
       type: object
-      required: [base_asset, quote_asset, amount, price, total, quote_type, degraded, path, timestamp]
+      required:
+        [
+          base_asset,
+          quote_asset,
+          amount,
+          price,
+          total,
+          quote_type,
+          degraded,
+          path,
+          timestamp,
+        ]
       description: Best available price quote with full routing path
       properties:
         base_asset:

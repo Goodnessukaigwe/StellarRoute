@@ -857,7 +857,9 @@ async fn find_best_price(
 
     let fetch_result = fetch_guard.complete();
     budget_tracker.record(PipelineStage::FetchCandidates, fetch_result);
-    state.timeout_controller.record_latency(fetch_result.duration());
+    state
+        .timeout_controller
+        .record_latency(fetch_result.duration());
 
     // Record metrics
     crate::metrics::record_adaptive_timeout(
@@ -997,7 +999,10 @@ async fn find_best_price(
     // Stage 3: Health scoring
     let health_scoring_guard = budget_tracker.stage(PipelineStage::HealthScoring);
     let scored = scorer.score_venues(&fresh_inputs_owned);
-    budget_tracker.record(PipelineStage::HealthScoring, health_scoring_guard.complete());
+    budget_tracker.record(
+        PipelineStage::HealthScoring,
+        health_scoring_guard.complete(),
+    );
 
     let mut overrides = state.kill_switch.get_override_registry().await;
     // Merge static config overrides into dynamic ones
@@ -1063,7 +1068,10 @@ async fn find_best_price(
     let venue_selection_guard = budget_tracker.stage(PipelineStage::VenueSelection);
     // Pass only fresh candidates to price evaluation (Req 2.2, 6.1)
     let (selected, rationale) = evaluate_single_hop_direct_venues(fresh_candidates, amount)?;
-    budget_tracker.record(PipelineStage::VenueSelection, venue_selection_guard.complete());
+    budget_tracker.record(
+        PipelineStage::VenueSelection,
+        venue_selection_guard.complete(),
+    );
 
     // Finalize budget tracking
     let budget_summary = budget_tracker.finish();
